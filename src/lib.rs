@@ -60,7 +60,7 @@ pub mod game_loop {
             process_input(&mut state);
 
             // Update the game state
-            update();
+            update(&mut state);
 
             // Redraw game state after each update
             draw();
@@ -72,13 +72,15 @@ pub mod game_loop {
         state.set_game_over(false);
     }
 
-    pub fn process_input(state: &mut GameState) {
+    fn process_input(state: &mut GameState) {
         let input = input_handler::read_input("Enter a message to be echoed: ");
         state.set_input(input);
     }
 
-    fn update() {
-        // TODO
+    pub fn update(state: &mut GameState) {
+        if state.get_input() == ".exit".to_string() {
+            state.set_game_over(true)
+        };
     }
 
     fn draw() {
@@ -152,5 +154,16 @@ mod test {
         state.set_game_over(true);
 
         assert_eq!(true, state.game_over)
+    }
+
+    #[test]
+    fn updates_state() {
+        let mut state = game_loop::GameState::new();
+
+        state.set_input(".exit".to_string());
+
+        game_loop::update(&mut state);
+
+        assert_eq!(true, state.get_game_over());
     }
 }
