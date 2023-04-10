@@ -5,7 +5,7 @@
 // The below framework is loosely based on learnings from many sources on the 'game loop' design pattern
 // The primary source referenced during the building of this framework is: https://www.gameprogrammingpatterns.com/game-loop.html
 // This, of course, has to be translated into the world of rust
-mod game_loop {
+pub mod game_loop {
 
     // Provide structure to game data
     pub struct GameState {
