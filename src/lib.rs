@@ -124,7 +124,7 @@ pub mod input_handler {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::io::{self, Read};
+    
 
     #[test]
     fn gets_input() {
