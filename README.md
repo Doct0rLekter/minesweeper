@@ -37,6 +37,7 @@ Now, as a matter of habit, I recreate Minesweeper whenever I want to really lear
 Every piece of software has to start somewhere. Rather than attempt to make a full piece of software on the word go, a designer has to make a basic framework with which they will begin to structure their codebase. Here, I've started by 'blocking' together an initial structure for the program and game loop:
 
 '''
+
     // Defines a module within the project's module tree into which we separate elements of 
     // the main game loop
     mod game_loop {
