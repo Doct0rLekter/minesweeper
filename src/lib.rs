@@ -89,11 +89,6 @@ mod test {
     use super::*;
 
     #[test]
-    fn two_plus_two() {
-        assert_eq!(4, (2 + 2))
-    }
-
-    #[test]
     fn gets_input() {
         let state = game_loop::GameState::new();
 
