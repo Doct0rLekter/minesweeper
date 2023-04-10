@@ -6,6 +6,7 @@
 // The primary source referenced during the building of this framework is: https://www.gameprogrammingpatterns.com/game-loop.html
 // This, of course, has to be translated into the world of rust
 pub mod game_loop {
+    use super::input_handler;
 
     // Provide structure to game data
     pub struct GameState {
@@ -56,7 +57,7 @@ pub mod game_loop {
             }
 
             // Process console input
-            process_input();
+            process_input(&mut state);
 
             // Update the game state
             update();
@@ -71,8 +72,9 @@ pub mod game_loop {
         state.set_game_over(false);
     }
 
-    fn process_input() {
-        // TODO
+    pub fn process_input(state: &mut GameState) {
+        let input = input_handler::read_input("Enter a message to be echoed: ");
+        state.set_input(input);
     }
 
     fn update() {
@@ -84,9 +86,43 @@ pub mod game_loop {
     }
 }
 
+// Create a new module to handle input to the program
+pub mod input_handler {
+
+    use std::io::{self, Write};
+
+    pub fn read_input(prompt: &str) -> String {
+        let mut input = String::new();
+    
+        loop {
+            print!("{prompt}");
+            io::stdout().flush().unwrap();
+    
+            io::stdin()
+                .read_line(&mut input)
+                .expect("Failed to read line");
+    
+            if let Some('\n') = input.chars().next_back() {
+                input.pop();
+            }
+    
+            if let Some('\r') = input.chars().next_back() {
+                input.pop();
+            }
+    
+            if input.is_empty() {
+                continue;
+            }
+
+            break
+        }
+        input.to_lowercase()
+    }
+}
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::io::{self, Read};
 
     #[test]
     fn gets_input() {
