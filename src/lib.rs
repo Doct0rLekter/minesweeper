@@ -23,8 +23,8 @@ pub mod game_loop {
         }
 
         pub fn get_input(&self) -> String {
-            let input = self.input.clone();
-            input
+            self.input.clone()
+            
         }
 
         pub fn get_game_over(&self) -> bool {
