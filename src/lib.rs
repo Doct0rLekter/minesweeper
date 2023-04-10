@@ -28,18 +28,28 @@ mod game_loop {
         pub fn get_game_over(&self) -> bool {
             self.game_over            
         }
+
+        pub fn set_input(&self, input: String) {
+            self.input = input;
+        }
+
+        pub fn set_game_over(&self, game_over: bool) {
+            self.game_over = game_over;
+        }
     }
 
 
     pub fn play() {
         let mut state = GameState::new();    
         // Reset the game state after a game over
-        reset();
+        reset(&state);
         
         // Draw the initial game state
         draw();
         
         loop {
+            let game_over = state.get_game_over();
+
             if game_over {
                 break;
             }
@@ -55,8 +65,9 @@ mod game_loop {
             }
         }
         
-        fn reset() {
-            TODO
+        fn reset(state: &GameState) {
+            state.set_input("".to_string());
+            state.set_game_over(false);
         }
         
         fn process_input() {
@@ -97,5 +108,21 @@ mod test {
         let state = game_loop::GameState::new();
 
         assert_eq!(state.game_over, state.get_game_over());
+    }
+
+    #[test]
+    fn sets_input() {
+        let state = game_loop::GameState::new();
+        state.set_input("See? I can set input".to_string());
+
+        assert_eq!("See? I can set input".to_string(), state.input);
+    }
+
+    #[test]
+    fn sets_game_over() {
+        let state = game_loop::GameState::new();
+        state.set_game_over(true);
+
+        assert_eq!(false, state.game_over)
     }
 }
