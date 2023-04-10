@@ -16,16 +16,14 @@ pub mod game_loop {
 
     impl GameState {
         pub fn new() -> GameState {
-            let state = GameState {
-                input: "".to_string(),
+            GameState {
+                input: String::from(""),
                 game_over: false,
-            };
-            state
+            }
         }
 
         pub fn get_input(&self) -> String {
             self.input.clone()
-            
         }
 
         pub fn get_game_over(&self) -> bool {
@@ -47,7 +45,7 @@ pub mod game_loop {
         reset(&mut state);
 
         // Draw the initial game state
-        draw();
+        draw(&mut state);
 
         loop {
             let game_over = state.get_game_over();
@@ -63,12 +61,12 @@ pub mod game_loop {
             update(&mut state);
 
             // Redraw game state after each update
-            draw();
+            draw(&mut state);
         }
     }
 
     fn reset(state: &mut GameState) {
-        state.set_input("".to_string());
+        state.set_input(String::from(""));
         state.set_game_over(false);
     }
 
@@ -78,13 +76,16 @@ pub mod game_loop {
     }
 
     pub fn update(state: &mut GameState) {
-        if state.get_input() == ".exit".to_string() {
-            state.set_game_over(true)
+        if state.get_input() == String::from(".exit") {
+            state.set_game_over(true);
         };
     }
 
-    fn draw() {
-        // TODO
+    fn draw(state: &mut GameState) {
+        if state.get_input() != String::from(".exit") {
+            println!("Input text and I will repeat it back to you!\n    (Type '.exit' to quit the 'game')");
+            println!("{}", state.get_input());
+        }
     }
 }
 
@@ -95,28 +96,28 @@ pub mod input_handler {
 
     pub fn read_input(prompt: &str) -> String {
         let mut input = String::new();
-    
+
         loop {
             print!("{prompt}");
             io::stdout().flush().unwrap();
-    
+
             io::stdin()
                 .read_line(&mut input)
                 .expect("Failed to read line");
-    
+
             if let Some('\n') = input.chars().next_back() {
                 input.pop();
             }
-    
+
             if let Some('\r') = input.chars().next_back() {
                 input.pop();
             }
-    
+
             if input.is_empty() {
                 continue;
             }
 
-            break
+            break;
         }
         input.to_lowercase()
     }
@@ -124,7 +125,6 @@ pub mod input_handler {
 #[cfg(test)]
 mod test {
     use super::*;
-    
 
     #[test]
     fn gets_input() {
@@ -143,9 +143,9 @@ mod test {
     #[test]
     fn sets_input() {
         let mut state = game_loop::GameState::new();
-        state.set_input("See? I can set input".to_string());
+        state.set_input(String::from("See? I can set input"));
 
-        assert_eq!("See? I can set input".to_string(), state.input);
+        assert_eq!(String::from("See? I can set input"), state.input);
     }
 
     #[test]
@@ -160,7 +160,7 @@ mod test {
     fn updates_state() {
         let mut state = game_loop::GameState::new();
 
-        state.set_input(".exit".to_string());
+        state.set_input(String::from(".exit"));
 
         game_loop::update(&mut state);
 
