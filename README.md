@@ -115,4 +115,64 @@ Every piece of software has to start somewhere. Rather than attempt to make a fu
 
 '''
 
-With the framework above we will start building a working "game". First, we want to take the structure and turn it into a template for the logic that will eventually become a game. This is going to be accomplished with a simple program that prompts a user and then draws echoes their input to the screen with an escape hatch string for when they are done "playing":
+With the framework above we will start building a working "game". First, we want to take the structure and turn it into a template for the logic that will eventually become a game. This is going to be accomplished with a simple program that prompts a user and then draws echoes their input to the screen with an escape hatch string for when they are done "playing". Already the code is becoming too large to process in one chunk, so we will start with the 'game_loop' module and the GameState struct (as well as its associated implementation blocks):
+
+'''
+
+    // Provide structure to game data
+    //
+    // GameState now has two fields: one holds user input from each iteration of the main loop, the tells the game logic whether the user wants to end the game.
+    pub struct GameState {
+        pub input: String,
+        pub game_over: bool,
+    }
+
+    // This implements the 'Default' trait on our 'GameState' struct. Default is a part of the Rust standard library which is often expected by
+    // Rust developers when dealing with Types that implement a ::new() method. It sets the Type to a reasonable set of default values.
+    impl Default for GameState {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
+    // Below we implement a series of methods to act upon our 'GameState' struct. These include a default 'constructor' (the 'new' function), as well as 'getter' and 'setter'
+    // methods to either retrieve the values of our fields, or set them. This allows us to create a public 'API' while protecting our GameState from unintended changes.
+    // Several of our methods also use the '#[must_use]' attribute so that the compiler can ensure the results of the functions aren't left unused.
+    impl GameState {
+        // This is our default constructor to instantiate a new GameState
+        #[must_use]
+        pub fn new() -> GameState {
+            GameState {
+                input: String::new(),
+                game_over: false,
+            }
+        }
+
+        // This is a 'getter' method which returns a clone of our structs 'input' field. Cloning is relatively inefficient though, and so we may change this in the future.
+        #[must_use]
+        pub fn get_input(&self) -> String {
+            self.input.clone()
+        }
+
+        // This is a 'getter' method that allows us to check whether a 'game_over' state has been reached.
+        #[must_use]
+        pub fn get_game_over(&self) -> bool {
+            self.game_over
+        }
+
+        // This is a 'setter' method that allows us to update the 'input' field with a new String
+        pub fn set_input(&mut self, input: String) {
+            self.input = input;
+        }
+
+        // This is a 'setter' method that allows us to set the 'game_over' field to true or false (though the current template 'game' has no real reason to set 'false')
+        pub fn set_game_over(&mut self, game_over: bool) {
+            self.game_over = game_over;
+        }
+    }
+
+'''
+
+In a future iteration of our program we may want to move the 'GameState' struct out of the 'game_loop' module for two key reasons.
+
+1. In order to test our 'getter' and 'setter' methods properly, we actually have to make our fields public. If we move 'GameState' to the root module of 'lib.rs' 
