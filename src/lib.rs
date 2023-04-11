@@ -14,18 +14,27 @@ pub mod game_loop {
         pub game_over: bool,
     }
 
+    impl Default for GameState {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
     impl GameState {
+        #[must_use]
         pub fn new() -> GameState {
             GameState {
-                input: String::from(""),
+                input: String::new(),
                 game_over: false,
             }
         }
 
+        #[must_use]
         pub fn get_input(&self) -> String {
             self.input.clone()
         }
 
+        #[must_use]
         pub fn get_game_over(&self) -> bool {
             self.game_over
         }
@@ -66,7 +75,7 @@ pub mod game_loop {
     }
 
     fn reset(state: &mut GameState) {
-        state.set_input(String::from(""));
+        state.set_input(String::new());
         state.set_game_over(false);
     }
 
@@ -76,15 +85,15 @@ pub mod game_loop {
     }
 
     pub fn update(state: &mut GameState) {
-        if state.get_input() == String::from(".exit") {
+        if state.get_input() == ".exit" {
             state.set_game_over(true);
         };
     }
 
     fn draw(state: &mut GameState) {
-        if state.get_input() != String::from(".exit") {
-            println!("Input text and I will repeat it back to you!\n    (Type '.exit' to quit the 'game')");
-            println!("{}", state.get_input());
+        if state.get_input() != ".exit" {
+            println!("Input text and I will repeat it back to you!\n    (Type '.exit' to quit the 'game')\n");
+            println!("{}\n", state.get_input());
         }
     }
 }
@@ -94,13 +103,25 @@ pub mod input_handler {
 
     use std::io::{self, Write};
 
-    pub fn read_input(prompt: &str) -> String {
+    #[must_use]
+    #[allow(clippy::missing_panics_doc)] // This function is unlikely to panic under normal circumstances
+    pub fn read_input(prompt: &str ) -> String { // Might want to make a configuration parameter for case sensitivity that defaults to false
         let mut input = String::new();
 
         loop {
             print!("{prompt}");
+
+            // # Panics
+            //
+            // This function will panic if flushing the stdout buffer fails.
+            // However, this is unlikely to happen under normal circumstances.
             io::stdout().flush().unwrap();
 
+            // # Panics
+            //
+            // This function will panic if reading from stdin fails.
+            // This could happen if there's an issue with the input stream,
+            // or if the process does not have access to the standard input.
             io::stdin()
                 .read_line(&mut input)
                 .expect("Failed to read line");
