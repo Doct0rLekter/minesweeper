@@ -4,12 +4,12 @@
 
 TODO
 
-## Introduction to the Project
+# Introduction to the Project
 Minesweeper is a classic game from my childhood: it was one of the few interesting games that came bundled with windows back in the days of my youth. There was something about the mystique of an unassuming game with simple controls and no instruction manual that was fascinating to me. I still remember the process of figuring out the rules by process of elimination like a puzzle that had to be solved before the meat of the game could even be played, and I remember making crude hand-written notes about the locations of suspected mines before I discovered flags and recognized their purpose. This process of discovery is actually much of what piqued my initial interest in computers and the games they allowed. As a result, I have a healthy respect and sentimental fondness of this simple to learn yet hard to master puzzle game about finding all of the mines without setting them off.
 
 Now, as a matter of habit, I recreate Minesweeper whenever I want to really learn a new programming language. At first glance, the game is simple enough to implement. It requires a board, some mines, and empty squares that identify the number of adjacent mines. Once one looks beneath the surface, though, they find that Minesweeper digs to the core of what makes games tick. It lays bare how a language handles structuring data, how it defines logic to operate on that data, how it processes inputs, and how to package all of the core concepts of good software design into clean and efficient source code that "just works". I did it, or at least began the process of doing it, in Scratch for week 0: how better to show growth and wrap the course up in a neat bow than to finish what I started in a brand new programming language that represents the culmination of everything we've learned in this course?
 
-## Goals
+# Goals
 
 - Implement a fully featured Minesweeper game on the command line using rust:
   - users should be able to configure the board size and other details about the game using a text based "title menu" before entering the actual game loop
@@ -32,7 +32,7 @@ Now, as a matter of habit, I recreate Minesweeper whenever I want to really lear
   - Breaking a problem down into smaller problems for easier processing
   - Splitting the design into discrete versions from conception to minimum viable product to a richly featured "end" product
 
-## First Steps
+# First Steps
 
 Every piece of software has to start somewhere. Rather than attempt to make a full piece of software on the word go, a designer has to make a basic framework with which they will begin to structure their codebase. Here, I've started by 'blocking' together an initial structure for the program and game loop:
 
@@ -115,7 +115,7 @@ Every piece of software has to start somewhere. Rather than attempt to make a fu
 
 '''
 
-With the framework above we will start building a working "game". First, we want to take the structure and turn it into a template for the logic that will eventually become a game. This is going to be accomplished with a simple program that prompts a user and then draws echoes their input to the screen with an escape hatch string for when they are done "playing". Already the code is becoming too large to process in one chunk, so we will start with the 'game_loop' module and the GameState struct (as well as its associated implementation blocks):
+With the framework above we will start building a working "game". First, we want to take the structure and turn it into a prototype for the logic that will eventually become a game. This is going to be accomplished with a simple program that prompts a user and then draws echoes their input to the screen with an escape hatch string for when they are done "playing". Already the code is becoming too large to process in one chunk, so we will start with the 'game_loop' module and the GameState struct (as well as its associated implementation blocks):
 
 '''
 
@@ -165,7 +165,7 @@ With the framework above we will start building a working "game". First, we want
             self.input = input;
         }
 
-        // This is a 'setter' method that allows us to set the 'game_over' field to true or false (though the current template 'game' has no real reason to set 'false')
+        // This is a 'setter' method that allows us to set the 'game_over' field to true or false (though the current prototype 'game' has no real reason to set 'false')
         pub fn set_game_over(&mut self, game_over: bool) {
             self.game_over = game_over;
         }
@@ -264,12 +264,12 @@ Next, we will take a look at the game loop itself:
 
 '''
 
-There are a few things we will need to change as we go forward with the template logic, many items of which are already called out in the commentary above, but as it stands we have a functioning programming replete with a meager "gameplay" loop and a simple exit condition! Our "game" has earned every double quotes I've given it at this point considering how it lacks basically all of the elements of good gameplay design, but at the prototype phase all we really need is something to prove that the engine runs before we break it with the early iterations of the program we actually want to build. Before we start on that, though, we have a couple more modules we need to get to, starting with the new 'input_handler' module we created for our 'process_input' function:
+There are a few things we will need to change as we go forward with the prototype logic, many items of which are already called out in the commentary above, but as it stands we have a functioning programming replete with a meager "gameplay" loop and a simple exit condition! Our "game" has earned every double quotes I've given it at this point considering how it lacks basically all of the elements of good gameplay design, but at the prototype phase all we really need is something to prove that the engine runs before we break it with the early iterations of the program we actually want to build. Before we start on that, though, we have a couple more modules we need to get to, starting with the new 'input_handler' module we created for our 'process_input' function:
 
 '''
 
     // Here is our 'input_handler' module. We can see it's pretty bare at the moment in spite of the relative complexity of the 'read_input' function compared to other functions.
-    // Still, a game is mostly about processing and responding to user input, so as our game becomes more complex than the template logic we've written: we can be certain
+    // Still, a game is mostly about processing and responding to user input, so as our game becomes more complex than the prototype logic we've written: we can be certain
     // that much more input handling will be necessary over the life of our program.
     pub mod input_handler {
 
@@ -335,11 +335,19 @@ There are a few things we will need to change as we go forward with the template
 The 'input_handler' module will be the focus of a lot of our future changes, as how you handle input is a critical part of building a full game. One of the first things we should consider doing, though, is making the error handling part of "handling input" a bit more robust. We don't want to slow down prototyping too much for this since nothing above represents even a near final state, but we also don't want to ignore such an important part of creating a fully formed piece of software until it's already complete. That just invites laziness right at the end. Speaking of ensuring we create a well-formed piece of software, next we will look at our very important 'test' module:
 
 '''
-
+    
+    // Rust comes packaged with both unit testing and integration testing by default. With a simple command in its package manager 'cargo' we can run each of the below
+    // unit tests and receive a summary report. This is fantastic for Test Driven Development as it allows tests to be made the motive power of development right
+    // out of the 'box' so to speak.
     #[cfg(test)]
     mod test {
+        // Unlike our other 'use' import statements, this one brings most everything from the module tree into scope. Very convenient when you want to test everything
         use super::*;
 
+        // Each test below was created before the function they were intended to test. This is a part of the Test Driven Development cycle:
+        // understand a feature to be implemented, write a failing unit test for the intended functionality, and then write the code to make that unit test pass.
+        // From there, you refactor the code and re-run the test to make sure it is still working as intended! This is very similar to the 'Plan, Do, Study, Act'
+        // or PDSA cycle from the Toyota Production system.
         #[test]
         fn gets_input() {
             let state = game_loop::GameState::new();
@@ -383,3 +391,18 @@ The 'input_handler' module will be the focus of a lot of our future changes, as 
     }
 
 '''
+
+Test Driven Development and writing unit tests are the two concepts most new to me at this point, so I admittedly can only parrot what I've learned from trusted sources. I also may not be writing the best unit tests; however, the power is still there insofar as the basics are concerned. We now have a series of tests that can be modified and added to as the program evolves into a real game. With that in mind, we will now segue into a discussion of version control. This documentation can only describe the evolution of our program in discreet meaningful version jumps (although, until we start the work of turning our game engine into a minesweeper game, we will avoid actually changing version numbers). Any more fine grained and we would run into a couple of problems such as giving too much information to be meaningful and slowing development of the program to a crawl. Our single major iteration of taking the framework we blocked out and turning it into a working "prototype" game took something on the order of 12 individual commits to our git repository. Each of those commits represented the implementation of a single piece of functionality, and yet could/should probably have been broken down even further.
+To get a more full picture of the minute details of this process one may look at the public repository and see exactly what changes are being made in what order which additionally allows us to go back and find the problem if one of our changes breaks the software. One note, I try to keep to a policy of never pushing a series of commits to the remote unless:
+
+   - The code compiles
+   - The code represents a functioning iteration of the program we are trying to build
+   - and, the code passes all unit tests
+
+This helps ensure that each public commit represents something that other developers, testers, and potentially users can reliably contribute to, test, or use. For a project where there is only one person developing it this may not seem particularly important; however, what if we were to add more developers? What if we wanted to ask someone to test it? Even if we never do either, we will likely want/need to work in a team at some point, and you perform in the same way you practice. If you cut corners when practicing what is to say you won't do the same in a production environment? This makes it of crucial importance to try and follow best practices insofar as you have learned and can possibly follow no matter the circumstances of your project.
+
+### Section Summary
+In this section, we created a framework from which to start developing our 'minesweeper' game. We then put together some simple logic, and tests to probe that logic, to prove the functionality of our framework and stand as a prototype from which to build the full program. We also called out where we may focus some future refactoring of our code base, and discussed some of features of the Rust programming language that were of benefit to our end goals. Finally, we spoke about how we are using Test Driven Development and version control with git to enhance our ability to ensure the program is, and remains, correct. From here, it is now time to start working on turning our engine prototype into something that looks more like Minesweeper.
+
+
+# Building Minesweeper from the Ground Up
