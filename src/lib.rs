@@ -7,10 +7,24 @@
 // https://www.gameprogrammingpatterns.com/game-loop.html
 // This, of course, has to be translated into the world of rust
 
+
+
 // Provide structure to game data
 pub struct GameState {
     input: String,
     game_over: bool,
+    board_width: u32,
+    board_height: u32,
+    tiles: Vec<Tile>,
+
+}
+
+// Provide type checked names to capture the state of our tiles
+#[derive(Debug)]
+enum Tile {
+    Hidden{has_mine: bool},
+    Revealed{has_mine: bool, hint: u32},
+    Flagged{has_mine: bool},
 }
 
 impl Default for GameState {
@@ -25,6 +39,9 @@ impl GameState {
         GameState {
             input: String::new(),
             game_over: false,
+            board_height: 0,
+            board_width: 0,
+            tiles: Vec::new(),
         }
     }
 
@@ -168,6 +185,27 @@ mod test {
     }
 
     #[test]
+    fn gets_height() {
+        let state = GameState::new();
+
+        assert_eq!(state.board_height, state.get_height());
+    }
+    
+    #[test]
+    fn gets_width() {
+        let state = GameState::new();
+
+        assert_eq!(state.board_width, state.get_width());
+    }
+
+    #[test]
+    fn gets_tile() {
+        let state = GameState::new();
+
+        assert_eq!(state.tiles[0], state.get_tile(0));
+    }
+
+    #[test]
     fn sets_input() {
         let mut state = GameState::new();
         state.set_input(String::from("See? I can set input"));
@@ -183,6 +221,29 @@ mod test {
         assert_eq!(true, state.game_over)
     }
 
+    #[test]
+    fn sets_width() {
+        let mut state = GameState::new();
+        state.set_width(5);
+
+        assert_eq!(5, state.board_width)
+    }
+    
+    #[test]
+    fn sets_height() {
+        let mut state = GameState::new();
+        state.set_height(5);
+
+        assert_eq!(5, state.board_width)
+    }
+    
+    #[test]
+    fn sets_tile() {
+        let mut state = GameState::new();
+        state.set_tile(0, Tile::Revealed { has_mine: (false), hint: (0) });
+
+        assert_eq!(state.tiles[0], Tile::Revealed { has_mine: (false), hint: (0) })
+    }    
     #[test]
     fn updates_state() {
         let mut state = GameState::new();
