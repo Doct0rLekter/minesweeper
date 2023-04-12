@@ -6,51 +6,54 @@
 // The primary source referenced during the building of this framework is:
 // https://www.gameprogrammingpatterns.com/game-loop.html
 // This, of course, has to be translated into the world of rust
+
+// Provide structure to game data
+pub struct GameState {
+    input: String,
+    game_over: bool,
+}
+
+impl Default for GameState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl GameState {
+    #[must_use]
+    pub fn new() -> GameState {
+        GameState {
+            input: String::new(),
+            game_over: false,
+        }
+    }
+
+    #[must_use]
+    pub fn get_input(&self) -> String {
+        self.input.clone()
+    }
+
+    #[must_use]
+    pub fn get_game_over(&self) -> bool {
+        self.game_over
+    }
+
+    pub fn set_input(&mut self, input: String) {
+        self.input = input;
+    }
+
+    pub fn set_game_over(&mut self, game_over: bool) {
+        self.game_over = game_over;
+    }
+}
+
 pub mod game_loop {
-    use super::input_handler;
+    use super::{input_handler, GameState};
 
-    // Provide structure to game data
-    pub struct GameState {
-        pub input: String,
-        pub game_over: bool,
-    }
-
-    impl Default for GameState {
-        fn default() -> Self {
-            Self::new()
-        }
-    }
-
-    impl GameState {
-        #[must_use]
-        pub fn new() -> GameState {
-            GameState {
-                input: String::new(),
-                game_over: false,
-            }
-        }
-
-        #[must_use]
-        pub fn get_input(&self) -> String {
-            self.input.clone()
-        }
-
-        #[must_use]
-        pub fn get_game_over(&self) -> bool {
-            self.game_over
-        }
-
-        pub fn set_input(&mut self, input: String) {
-            self.input = input;
-        }
-
-        pub fn set_game_over(&mut self, game_over: bool) {
-            self.game_over = game_over;
-        }
-    }
 
     pub fn play() {
         let mut state = GameState::new();
+        
         // Reset the game state after a game over
         reset(&mut state);
 
@@ -152,21 +155,21 @@ mod test {
 
     #[test]
     fn gets_input() {
-        let state = game_loop::GameState::new();
+        let state = GameState::new();
 
         assert_eq!(state.input, state.get_input());
     }
 
     #[test]
     fn gets_game_over() {
-        let state = game_loop::GameState::new();
+        let state = GameState::new();
 
         assert_eq!(state.game_over, state.get_game_over());
     }
 
     #[test]
     fn sets_input() {
-        let mut state = game_loop::GameState::new();
+        let mut state = GameState::new();
         state.set_input(String::from("See? I can set input"));
 
         assert_eq!(String::from("See? I can set input"), state.input);
@@ -174,7 +177,7 @@ mod test {
 
     #[test]
     fn sets_game_over() {
-        let mut state = game_loop::GameState::new();
+        let mut state = GameState::new();
         state.set_game_over(true);
 
         assert_eq!(true, state.game_over)
@@ -182,7 +185,7 @@ mod test {
 
     #[test]
     fn updates_state() {
-        let mut state = game_loop::GameState::new();
+        let mut state = GameState::new();
 
         state.set_input(String::from(".exit"));
 
