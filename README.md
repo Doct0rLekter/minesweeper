@@ -36,7 +36,8 @@ Now, as a matter of habit, I recreate Minesweeper whenever I want to really lear
 
 Every piece of software has to start somewhere. Rather than attempt to make a full piece of software on the word go, a designer has to make a basic framework with which they will begin to structure their codebase. Here, I've started by 'blocking' together an initial structure for the program and game loop:
 
-'''
+<pre>
+```rust
 
     // Defines a module within the project's module tree into which we separate elements of 
     // the main game loop
@@ -114,6 +115,7 @@ Every piece of software has to start somewhere. Rather than attempt to make a fu
     }
 
 '''
+</pre>
 
 With the framework above we will start building a working "game". First, we want to take the structure and turn it into a prototype for the logic that will eventually become a game. This is going to be accomplished with a simple program that prompts a user and then draws echoes their input to the screen with an escape hatch string for when they are done "playing". Already the code is becoming too large to process in one chunk, so we will start with the 'game_loop' module and the GameState struct (as well as its associated implementation blocks):
 
