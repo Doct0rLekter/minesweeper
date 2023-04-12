@@ -3,7 +3,8 @@
 
 // Start blocking out a framework
 // The below framework is loosely based on learnings from many sources on the 'game loop' design pattern
-// The primary source referenced during the building of this framework is: https://www.gameprogrammingpatterns.com/game-loop.html
+// The primary source referenced during the building of this framework is:
+// https://www.gameprogrammingpatterns.com/game-loop.html
 // This, of course, has to be translated into the world of rust
 pub mod game_loop {
     use super::input_handler;
@@ -105,7 +106,7 @@ pub mod input_handler {
 
     #[must_use]
     #[allow(clippy::missing_panics_doc)] // This function is unlikely to panic under normal circumstances
-    pub fn read_input(prompt: &str ) -> String { // Might want to make a configuration parameter for case sensitivity that defaults to false
+    pub fn read_input(prompt: &str) -> String {
         let mut input = String::new();
 
         loop {
@@ -140,9 +141,11 @@ pub mod input_handler {
 
             break;
         }
+        // Might want to make a configuration parameter for case sensitivity that defaults to false
         input.to_lowercase()
     }
 }
+
 #[cfg(test)]
 mod test {
     use super::*;
