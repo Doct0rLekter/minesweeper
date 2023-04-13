@@ -200,7 +200,9 @@ pub mod game_loop {
     }
 
     fn draw(state: &mut GameState) {
-        // TODO
+        if state.get_game_over() {
+            println!("Game over!")
+        }
     }
 }
 
