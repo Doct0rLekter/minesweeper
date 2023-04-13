@@ -14,15 +14,13 @@ pub struct GameState {
     board_width: u32,
     board_height: u32,
     tiles: Vec<Tile>,
-
 }
 
 // Provide type checked names to capture the state of our tiles
 #[derive(Debug, PartialEq)]
 pub enum Tile {
-    Hidden{has_mine: bool},
-    Revealed{has_mine: bool, hint: u32},
-    Flagged{has_mine: bool},
+    Hidden { has_mine: bool, flagged: bool },
+    Revealed { has_mine: bool, hint: u32 },
 }
 
 impl Default for GameState {
@@ -83,19 +81,20 @@ impl GameState {
     pub fn set_width(&mut self, width: u32) {
         self.board_width = width;
     }
-    
+
     pub fn set_tile(&mut self, index: usize, tile_state: Tile) {
         self.tiles[index] = tile_state;
     }
 }
 
 pub mod game_loop {
-    use super::{input_handler, GameState};
+    use crate::input_handler::read_as_bool;
 
+    use super::{input_handler, GameState, Tile};
 
     pub fn play() {
         let mut state = GameState::new();
-        
+
         // Reset the game state after a game over
         reset(&mut state);
 
@@ -126,8 +125,63 @@ pub mod game_loop {
     }
 
     fn process_input(state: &mut GameState) {
-        let row = input_handler::read_as_int("Enter row: ");
-        let column = input_handler::read_as_int("Enter column: ");
+        loop {
+            let mut row = input_handler::read_as_int("Enter row: ", 1, state.get_height());
+            let mut column = input_handler::read_as_int("Enter column: ", 1, state.get_width());
+
+            // Turn input into index
+            row -= 1;
+            column -= 1;
+
+            let index = ((row * state.get_width()) + column) as usize;
+
+            match state.get_tile(index) {
+                Tile::Hidden {
+                    has_mine: x,
+                    flagged: false,
+                } => {
+                    let flag_tile = read_as_bool("Flag this tile? Y/n: ");
+                    if flag_tile {
+                        state.set_tile(
+                            index,
+                            Tile::Hidden {
+                                has_mine: *x,
+                                flagged: true,
+                            },
+                        );
+                    } else {
+                        state.set_tile(
+                            index,
+                            Tile::Revealed {
+                                has_mine: *x,
+                                hint: if *x { 10 } else { 0 },
+                            },
+                        );
+                    }
+                    break;
+                }
+                Tile::Hidden {
+                    has_mine: y,
+                    flagged: true,
+                } => {
+                    let unflag_tile = read_as_bool("Unflag this tile? Y/n: ");
+                    if unflag_tile {
+                        state.set_tile(
+                            index,
+                            Tile::Hidden {
+                                has_mine: *y,
+                                flagged: false,
+                            },
+                        );
+                    }
+                    break;
+                }
+                _ => {
+                    println!("Please select a hidden tile.");
+                    continue;
+                }
+            }
+        }
     }
 
     pub fn update(state: &mut GameState) {
@@ -190,26 +244,33 @@ pub mod input_handler {
         input.to_lowercase()
     }
 
+    #[must_use]
     pub fn read_as_bool(prompt: &str) -> bool {
         let input = loop {
             let input = read_input(prompt);
-    
+
             match input.trim().to_lowercase().as_str() {
                 "yes" => break true,
                 "no" => break false,
                 _ => println!("Invalid input. Please enter either 'yes' or 'no'."),
             }
         };
-    
+
         input
     }
-    
-    pub fn read_as_int(prompt: &str) -> i32 {
+
+    #[must_use]
+    pub fn read_as_int(prompt: &str, min: u32, max: u32) -> u32 {
         let input = loop {
             let input = read_input(prompt);
-    
-            if let Ok(n) = input.trim().parse::<i32>() {
-                break n;
+
+            if let Ok(n) = input.trim().parse::<u32>() {
+                if n >= min && n <= max {
+                    break n;
+                }
+
+                println!("Number must be between {min} and {max} inclusive.");
+                continue;
             }
             println!("Invalid input. Please enter an integer.");
         };
@@ -241,7 +302,7 @@ mod test {
 
         assert_eq!(state.board_height, state.get_height());
     }
-    
+
     #[test]
     fn gets_width() {
         let state = GameState::new();
@@ -253,7 +314,10 @@ mod test {
     fn gets_tile() {
         let mut state = GameState::new();
 
-        state.tiles.push(Tile::Hidden { has_mine: (false) });
+        state.tiles.push(Tile::Hidden {
+            has_mine: false,
+            flagged: false,
+        });
 
         assert_eq!(&state.tiles[0], state.get_tile(0));
     }
@@ -281,7 +345,7 @@ mod test {
 
         assert_eq!(5, state.board_width)
     }
-    
+
     #[test]
     fn sets_height() {
         let mut state = GameState::new();
@@ -289,15 +353,30 @@ mod test {
 
         assert_eq!(5, state.board_height)
     }
-    
+
     #[test]
     fn sets_tile() {
         let mut state = GameState::new();
-        state.tiles.push(Tile::Hidden { has_mine: (false) });
-        state.set_tile(0, Tile::Revealed { has_mine: (false), hint: (0) });
+        state.tiles.push(Tile::Hidden {
+            has_mine: (false),
+            flagged: false,
+        });
+        state.set_tile(
+            0,
+            Tile::Revealed {
+                has_mine: (false),
+                hint: (0),
+            },
+        );
 
-        assert_eq!(state.tiles[0], Tile::Revealed { has_mine: (false), hint: (0) })
-    }    
+        assert_eq!(
+            state.tiles[0],
+            Tile::Revealed {
+                has_mine: (false),
+                hint: (0)
+            }
+        )
+    }
     #[test]
     fn updates_state() {
         let mut state = GameState::new();
