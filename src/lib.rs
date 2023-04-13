@@ -88,8 +88,6 @@ impl GameState {
 }
 
 pub mod game_loop {
-    use crate::input_handler::read_as_bool;
-
     use super::{input_handler, GameState, Tile};
 
     pub fn play() {
@@ -140,7 +138,7 @@ pub mod game_loop {
                     has_mine: x,
                     flagged: false,
                 } => {
-                    let flag_tile = read_as_bool("Flag this tile? Y/n: ");
+                    let flag_tile = input_handler::read_as_bool("Flag this tile? Y/n: ");
                     if flag_tile {
                         state.set_tile(
                             index,
@@ -164,7 +162,7 @@ pub mod game_loop {
                     has_mine: y,
                     flagged: true,
                 } => {
-                    let unflag_tile = read_as_bool("Unflag this tile? Y/n: ");
+                    let unflag_tile = input_handler::read_as_bool("Unflag this tile? Y/n: ");
                     if unflag_tile {
                         state.set_tile(
                             index,
