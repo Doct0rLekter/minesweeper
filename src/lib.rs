@@ -9,11 +9,11 @@
 
 // Provide structure to game data
 pub struct GameState {
-    input: String,
     game_over: bool,
     board_width: u32,
     board_height: u32,
     tiles: Vec<Tile>,
+    selected_tile: Option<usize>,
 }
 
 // Provide type checked names to capture the state of our tiles
@@ -33,17 +33,12 @@ impl GameState {
     #[must_use]
     pub fn new() -> GameState {
         GameState {
-            input: String::new(),
             game_over: false,
             board_height: 0,
             board_width: 0,
             tiles: Vec::new(),
+            selected_tile: None,
         }
-    }
-
-    #[must_use]
-    pub fn get_input(&self) -> String {
-        self.input.clone()
     }
 
     #[must_use]
@@ -66,8 +61,10 @@ impl GameState {
         &self.tiles[index]
     }
 
-    pub fn set_input(&mut self, input: String) {
-        self.input = input;
+    #[must_use]
+    pub fn get_selected(&self) -> usize {
+        self.selected_tile
+            .expect("Should always have 'Some' value during normal play.")
     }
 
     pub fn set_game_over(&mut self, game_over: bool) {
@@ -84,6 +81,11 @@ impl GameState {
 
     pub fn set_tile(&mut self, index: usize, tile_state: Tile) {
         self.tiles[index] = tile_state;
+    }
+
+    pub fn set_selected(&mut self, index: u32) {
+        let selected_tile = index as usize;
+        self.selected_tile = Some(selected_tile);
     }
 }
 
@@ -118,12 +120,12 @@ pub mod game_loop {
     }
 
     fn reset(state: &mut GameState) {
-        state.set_input(String::new());
         state.set_game_over(false);
     }
 
     fn process_input(state: &mut GameState) {
         loop {
+            println!("Select a hidden tile\n");
             let mut row = input_handler::read_as_int("Enter row: ", 1, state.get_height());
             let mut column = input_handler::read_as_int("Enter column: ", 1, state.get_width());
 
@@ -131,7 +133,9 @@ pub mod game_loop {
             row -= 1;
             column -= 1;
 
-            let index = ((row * state.get_width()) + column) as usize;
+            state.set_selected((row * state.get_width()) + column);
+
+            let index = state.get_selected();
 
             match state.get_tile(index) {
                 Tile::Hidden {
@@ -171,11 +175,12 @@ pub mod game_loop {
                                 flagged: false,
                             },
                         );
+                        break;
                     }
-                    break;
+                    continue;
                 }
                 _ => {
-                    println!("Please select a hidden tile.");
+                    println!("Selected tile must be hidden.");
                     continue;
                 }
             }
@@ -183,16 +188,19 @@ pub mod game_loop {
     }
 
     pub fn update(state: &mut GameState) {
-        if state.get_input() == ".exit" {
-            state.set_game_over(true);
-        };
+        let index = state.get_selected();
+
+        if let Tile::Revealed {
+            has_mine: true,
+            hint: _,
+        } = state.get_tile(index)
+        {
+            state.set_game_over(true)
+        }
     }
 
     fn draw(state: &mut GameState) {
-        if state.get_input() != ".exit" {
-            println!("Input text and I will repeat it back to you!\n    (Type '.exit' to quit the 'game')\n");
-            println!("{}\n", state.get_input());
-        }
+        // TODO
     }
 }
 
@@ -281,13 +289,6 @@ mod test {
     use super::*;
 
     #[test]
-    fn gets_input() {
-        let state = GameState::new();
-
-        assert_eq!(state.input, state.get_input());
-    }
-
-    #[test]
     fn gets_game_over() {
         let state = GameState::new();
 
@@ -321,11 +322,12 @@ mod test {
     }
 
     #[test]
-    fn sets_input() {
+    fn gets_selected() {
         let mut state = GameState::new();
-        state.set_input(String::from("See? I can set input"));
 
-        assert_eq!(String::from("See? I can set input"), state.input);
+        state.selected_tile = Some(1);
+
+        assert_eq!(1, state.get_selected());
     }
 
     #[test]
@@ -375,11 +377,18 @@ mod test {
             }
         )
     }
+
+    #[test]
+    fn sets_selected() {
+        let mut state = GameState::new();
+        state.set_selected(0);
+
+        assert_eq!(state.selected_tile.unwrap(), 0)
+    }
+
     #[test]
     fn updates_state() {
         let mut state = GameState::new();
-
-        state.set_input(String::from(".exit"));
 
         game_loop::update(&mut state);
 
