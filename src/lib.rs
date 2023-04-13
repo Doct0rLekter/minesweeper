@@ -7,8 +7,6 @@
 // https://www.gameprogrammingpatterns.com/game-loop.html
 // This, of course, has to be translated into the world of rust
 
-
-
 // Provide structure to game data
 pub struct GameState {
     input: String,
@@ -20,8 +18,8 @@ pub struct GameState {
 }
 
 // Provide type checked names to capture the state of our tiles
-#[derive(Debug)]
-enum Tile {
+#[derive(Debug, PartialEq)]
+pub enum Tile {
     Hidden{has_mine: bool},
     Revealed{has_mine: bool, hint: u32},
     Flagged{has_mine: bool},
@@ -55,12 +53,39 @@ impl GameState {
         self.game_over
     }
 
+    #[must_use]
+    pub fn get_height(&self) -> u32 {
+        self.board_height
+    }
+
+    #[must_use]
+    pub fn get_width(&self) -> u32 {
+        self.board_width
+    }
+
+    #[must_use]
+    pub fn get_tile(&self, index: usize) -> &Tile {
+        &self.tiles[index]
+    }
+
     pub fn set_input(&mut self, input: String) {
         self.input = input;
     }
 
     pub fn set_game_over(&mut self, game_over: bool) {
         self.game_over = game_over;
+    }
+
+    pub fn set_height(&mut self, height: u32) {
+        self.board_height = height;
+    }
+
+    pub fn set_width(&mut self, width: u32) {
+        self.board_width = width;
+    }
+    
+    pub fn set_tile(&mut self, index: usize, tile_state: Tile) {
+        self.tiles[index] = tile_state;
     }
 }
 
@@ -101,8 +126,8 @@ pub mod game_loop {
     }
 
     fn process_input(state: &mut GameState) {
-        let input = input_handler::read_input("Enter a message to be echoed: ");
-        state.set_input(input);
+        let row = input_handler::read_as_int("Enter row: ");
+        let column = input_handler::read_as_int("Enter column: ");
     }
 
     pub fn update(state: &mut GameState) {
@@ -164,6 +189,32 @@ pub mod input_handler {
         // Might want to make a configuration parameter for case sensitivity that defaults to false
         input.to_lowercase()
     }
+
+    pub fn read_as_bool(prompt: &str) -> bool {
+        let input = loop {
+            let input = read_input(prompt);
+    
+            match input.trim().to_lowercase().as_str() {
+                "yes" => break true,
+                "no" => break false,
+                _ => println!("Invalid input. Please enter either 'yes' or 'no'."),
+            }
+        };
+    
+        input
+    }
+    
+    pub fn read_as_int(prompt: &str) -> i32 {
+        let input = loop {
+            let input = read_input(prompt);
+    
+            if let Ok(n) = input.trim().parse::<i32>() {
+                break n;
+            }
+            println!("Invalid input. Please enter an integer.");
+        };
+        input
+    }
 }
 
 #[cfg(test)]
@@ -200,9 +251,11 @@ mod test {
 
     #[test]
     fn gets_tile() {
-        let state = GameState::new();
+        let mut state = GameState::new();
 
-        assert_eq!(state.tiles[0], state.get_tile(0));
+        state.tiles.push(Tile::Hidden { has_mine: (false) });
+
+        assert_eq!(&state.tiles[0], state.get_tile(0));
     }
 
     #[test]
@@ -234,12 +287,13 @@ mod test {
         let mut state = GameState::new();
         state.set_height(5);
 
-        assert_eq!(5, state.board_width)
+        assert_eq!(5, state.board_height)
     }
     
     #[test]
     fn sets_tile() {
         let mut state = GameState::new();
+        state.tiles.push(Tile::Hidden { has_mine: (false) });
         state.set_tile(0, Tile::Revealed { has_mine: (false), hint: (0) });
 
         assert_eq!(state.tiles[0], Tile::Revealed { has_mine: (false), hint: (0) })
