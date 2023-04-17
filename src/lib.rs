@@ -87,10 +87,23 @@ impl GameState {
         let selected_tile = index as usize;
         self.selected_tile = Some(selected_tile);
     }
+
+    pub fn represent_tile(&mut self, index: u32) -> String {
+        let tile = index as usize;
+
+        match self.tiles[tile] {
+            Tile::Hidden { has_mine: _, flagged: true } => String::from(" f "),
+            Tile::Revealed { has_mine: true, hint: _} => String::from(" X "),
+            Tile::Revealed { has_mine: false, hint: x}=> x.to_string(),
+            _ => String::from(" - ")
+        }
+    }
 }
 
 pub mod game_loop {
     use super::{input_handler, GameState, Tile};
+    use std::io::stdout;
+    use crossterm::{execute, terminal};
 
     pub fn play() {
         let mut state = GameState::new();
@@ -199,11 +212,37 @@ pub mod game_loop {
         }
     }
 
+    fn clear_screen() {
+        let mut stdout = stdout();
+
+        execute!(stdout, terminal::Clear(terminal::ClearType::All)).expect("Failed to clear screen");
+    }
     fn draw(state: &mut GameState) {
         if state.get_game_over() {
-            println!("Game over!")
+            println!("Game over!");
+            return;
+        }
+        clear_screen();
+        // Print the column numbers
+        print!("   ");
+        for col in 0..state.get_width() {
+            print!("{:3}", col + 1);
+        }
+        println!();
+
+        for row in 0..state.get_height() {
+            print!("{:3}", row + 1); // Print the row number
+
+            for col in 0..state.get_width() {
+                let index = (row * state.get_width() + col) as u32;
+                let tile_representation = state.represent_tile(index);
+                print!("{tile_representation}");
+            }
+
+            println!();
         }
     }
+    
 }
 
 // Create a new module to handle input to the program

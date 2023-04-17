@@ -1,15 +1,18 @@
 # MINESWEEPER
+
 #### Video Demo:  <URL HERE>
+
 #### Description: Create a CLI Minesweeper game using idiomatic Rust, Test Driven Development, and classic game design patterns (IE, the 'game loop' design pattern)
 
 TODO
 
-# Introduction to the Project
+## Introduction to the Project
+
 Minesweeper is a classic game from my childhood: it was one of the few interesting games that came bundled with windows back in the days of my youth. There was something about the mystique of an unassuming game with simple controls and no instruction manual that was fascinating to me. I still remember the process of figuring out the rules by process of elimination like a puzzle that had to be solved before the meat of the game could even be played, and I remember making crude hand-written notes about the locations of suspected mines before I discovered flags and recognized their purpose. This process of discovery is actually much of what piqued my initial interest in computers and the games they allowed. As a result, I have a healthy respect and sentimental fondness of this simple to learn yet hard to master puzzle game about finding all of the mines without setting them off.
 
 Now, as a matter of habit, I recreate Minesweeper whenever I want to really learn a new programming language. At first glance, the game is simple enough to implement. It requires a board, some mines, and empty squares that identify the number of adjacent mines. Once one looks beneath the surface, though, they find that Minesweeper digs to the core of what makes games tick. It lays bare how a language handles structuring data, how it defines logic to operate on that data, how it processes inputs, and how to package all of the core concepts of good software design into clean and efficient source code that "just works". I did it, or at least began the process of doing it, in Scratch for week 0: how better to show growth and wrap the course up in a neat bow than to finish what I started in a brand new programming language that represents the culmination of everything we've learned in this course?
 
-# Goals
+## Goals
 
 - Implement a fully featured Minesweeper game on the command line using rust:
   - users should be able to configure the board size and other details about the game using a text based "title menu" before entering the actual game loop
@@ -32,11 +35,12 @@ Now, as a matter of habit, I recreate Minesweeper whenever I want to really lear
   - Breaking a problem down into smaller problems for easier processing
   - Splitting the design into discrete versions from conception to minimum viable product to a richly featured "end" product
 
-# First Steps
+## First Steps
 
 Every piece of software has to start somewhere. Rather than attempt to make a full piece of software on the word go, a designer has to make a basic framework with which they will begin to structure their codebase. Here, I've started by 'blocking' together an initial structure for the program and game loop:
 
-## Blocking out the Game Loop
+### Blocking out the Game Loop
+
 ~~~rust
 // Defines a module within the project's module tree into which we separate elements of 
 // the main game loop
@@ -175,7 +179,7 @@ impl GameState {
 In a future iteration of our program we may want to move the 'GameState' struct out of the 'game_loop' module for two key reasons.
 
 1. In order to test our 'getter' and 'setter' methods properly, we actually have to make our fields public. If we move 'GameState' to the root module of 'lib.rs', our 'test' module can access private fields since they come from a parent module.
-2. GameState isn't necessarily a part of our 'game_loop' since the game loop only reads and operates on state. It then makes sense to decouple GameState and the game loop to ensure our game loop only operates on GameState using the accepted public API (IE, 'getters' and 'setters') instead of operating directly on private fields. 
+2. GameState isn't necessarily a part of our 'game_loop' since the game loop only reads and operates on state. It then makes sense to decouple GameState and the game loop to ensure our game loop only operates on GameState using the accepted public API (IE, 'getters' and 'setters') instead of operating directly on private fields.
 
 Next, we will take a look at the game loop itself:
 
@@ -388,14 +392,15 @@ mod test {
 Test Driven Development and writing unit tests are the two concepts most new to me at this point, so I admittedly can only parrot what I've learned from trusted sources. I also may not be writing the best unit tests; however, the power is still there insofar as the basics are concerned. We now have a series of tests that can be modified and added to as the program evolves into a real game. With that in mind, we will now segue into a discussion of version control. This documentation can only describe the evolution of our program in discreet meaningful version jumps (although, until we start the work of turning our game engine into a minesweeper game, we will avoid actually changing version numbers). Any more fine grained and we would run into a couple of problems such as giving too much information to be meaningful and slowing development of the program to a crawl. Our single major iteration of taking the framework we blocked out and turning it into a working "prototype" game took something on the order of 12 individual commits to our git repository. Each of those commits represented the implementation of a single piece of functionality, and yet could/should probably have been broken down even further.
 To get a more full picture of the minute details of this process one may look at the public repository and see exactly what changes are being made in what order which additionally allows us to go back and find the problem if one of our changes breaks the software. One note, I try to keep to a policy of never pushing a series of commits to the remote unless:
 
-   - The code compiles
-   - The code represents a functioning iteration of the program we are trying to build
-   - and, the code passes all unit tests
+- The code compiles
+- The code represents a functioning iteration of the program we are trying to build
+- and, the code passes all unit tests
 
 This helps ensure that each public commit represents something that other developers, testers, and potentially users can reliably contribute to, test, or use. For a project where there is only one person developing it this may not seem particularly important; however, what if we were to add more developers? What if we wanted to ask someone to test it? Even if we never do either, we will likely want/need to work in a team at some point, and you perform in the same way you practice. If you cut corners when practicing what is to say you won't do the same in a production environment? This makes it of crucial importance to try and follow best practices insofar as you have learned and can possibly follow no matter the circumstances of your project.
 
 ### Summary
+
 In this section, we created a framework from which to start developing our 'minesweeper' game. We then put together some simple logic, and tests to probe that logic, to prove the functionality of our framework and stand as a prototype from which to build the full program. We also called out where we may focus some future refactoring of our code base, and discussed some of features of the Rust programming language that were of benefit to our end goals. Finally, we spoke about how we are using Test Driven Development and version control with git to enhance our ability to ensure the program is, and remains, correct. From here, it is now time to start working on turning our engine prototype into something that looks more like Minesweeper.
 
 
-# Building Minesweeper from the Ground Up
+## Building Minesweeper from the Ground Up
