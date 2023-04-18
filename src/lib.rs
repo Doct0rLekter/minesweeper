@@ -249,6 +249,7 @@ pub mod game_loop {
         execute!(stdout, terminal::Clear(terminal::ClearType::All))
             .expect("Failed to clear screen");
     }
+
     fn draw(state: &mut GameState) {
         if state.get_game_over() {
             println!("Game over!");
@@ -274,6 +275,7 @@ pub mod game_loop {
             println!();
         }
     }
+    
 }
 
 // Create a new module to handle input to the program
