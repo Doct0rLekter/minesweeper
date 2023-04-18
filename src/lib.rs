@@ -6,6 +6,14 @@
 // The primary source referenced during the building of this framework is:
 // https://www.gameprogrammingpatterns.com/game-loop.html
 // This, of course, has to be translated into the world of rust
+//
+// In an effort to improve my grasp on the concepts of game creation in Rust,
+// I began reading the book, "Hands on Rust," which intends to teach Rust through the making of games.
+// This was done using the 'bracket-lib' game engine crate.
+// This product will remain with its current "from scratch" engine; however, there is likely
+// to be a certain amount of influence from the more formal implementation of the same concepts.
+// It should be noted that the games created in "Hands on Rust" are a Flappy Bird clone,
+// and a roguelike dungeon crawler which I've yet to start on.
 
 // Provide structure to game data
 pub struct GameState {
@@ -107,7 +115,7 @@ impl GameState {
             Some(Tile::Revealed {
                 has_mine: false,
                 hint: x,
-            }) => format!(" {} ", x.to_string()),
+            }) => format!(" {x} "),
             None => String::from(" ? "),
             _ => String::from(" - "),
         }
@@ -275,7 +283,6 @@ pub mod game_loop {
             println!();
         }
     }
-    
 }
 
 // Create a new module to handle input to the program

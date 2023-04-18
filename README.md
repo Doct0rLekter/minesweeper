@@ -400,6 +400,195 @@ This helps ensure that each public commit represents something that other develo
 
 ### Summary
 
-In this section, we created a framework from which to start developing our 'minesweeper' game. We then put together some simple logic, and tests to probe that logic, to prove the functionality of our framework and stand as a prototype from which to build the full program. We also called out where we may focus some future refactoring of our code base, and discussed some of features of the Rust programming language that were of benefit to our end goals. Finally, we spoke about how we are using Test Driven Development and version control with git to enhance our ability to ensure the program is, and remains, correct. From here, it is now time to start working on turning our engine prototype into something that looks more like Minesweeper.
+In this section, we created a framework from which to start developing our 'minesweeper' game. We then put together some simple logic, and tests to probe that logic, to prove the functionality of our framework and stand as a prototype from which to build the full program. We also called out where we may focus some future refactoring of our code base, and discussed some of features of the Rust programming language that were of benefit to our end goals. Finally, we spoke about how we are using Test Driven Development and version control with git to enhance our ability to ensure the program is, and remains, correct. From here, it is now time to start the work of turning our engine prototype into something that looks more like Minesweeper.
 
 ## Building Minesweeper from the Ground Up
+
+We are now at the point where our codebase is too large to be noted in detail and broken down line-by-line with explanatory commentary, so we will begin to explain only the most pertinent changes. For a more in-depth history of changes, the github repository contains the entire history of commits and what each commit changed (as well as some helpful commit messages containing the broad strokes of each change). In this version of the program, we will call this the version 0.2.0, we have gone from a simplistic prototype that serves almost as a demo for our engine, to building an incredibly early functional prototype of the game proper:
+
+We now have a "board" rendered,
+~~~
+     1  2  3  4  5
+   1 -  -  -  -  - 
+   2 -  -  -  -  - 
+   3 -  -  -  -  - 
+   4 -  -  -  -  - 
+   5 -  -  -  -  - 
+Select a hidden tile
+~~~
+
+The ability to process input,
+
+~~~
+     1  2  3  4  5
+   1 -  -  -  -  - 
+   2 -  -  -  -  - 
+   3 -  -  -  -  - 
+   4 -  -  -  -  - 
+   5 -  -  -  -  - 
+Select a hidden tile
+
+Enter column: 3
+Enter row: 3
+Flag this tile? Y/n: 
+~~~
+
+And the ability to represent flags and hints,
+
+~~~
+
+     1  2  3  4  5
+   1 -  -  -  -  - 
+   2 -  -  -  -  - 
+   3 -  -  F  0  - 
+   4 -  -  -  -  - 
+   5 -  -  -  -  - 
+Select a hidden tile
+
+~~~
+
+We still have ahead of us the need to actually include mines in our game, give the hints meaning, and make many improvements to both the functionality and readability of our codebase. All of that is ahead, though, so why don't we focus on the broad changes made to the code base:
+
+### Modeling Data in GameState
+
+~~~rust
+// We now have a much larger 'GameState' struct with fields for a range of requirements.
+// At present, the height and width fields will be fixed at size 5 for simplicity.
+// We also have a Vector of 'tiles' which, thanks to the power of Rust's enums,
+// Can hold everything we need to represent our game visually in only 2 options.
+// Finally, we keep track of the player's 'selected_tile' as an index into 'tiles'
+// so that we can separate processing of input from broader updates of state.
+pub struct GameState {
+    game_over: bool,
+    board_width: u32,
+    board_height: u32,
+    tiles: Vec<Tile>,
+    selected_tile: Option<usize>,
+}
+
+// Here is the enum mentioned. It has two modes for our tiles, each of which holds
+// additional information using struct-like named fields.
+// Because of this ability to hold additional information, we can capture all of
+// the data necessary to represent our game with only two enumerated modes.
+#[derive(Debug, PartialEq)]
+pub enum Tile {
+    Hidden { has_mine: bool, flagged: bool },
+    Revealed { has_mine: bool, hint: u32 },
+}
+~~~
+
+I cannot stress enough how useful it is to be able to represent the state of our tiles so succinctly. This avoids a lot of the complexity we might deal with should we have been required to enumerate states like, "hidden with mine," or use a second data structure to store where mines were located. There still is a lot of data, but Rust's type system means we have no choice but to exhaustively account for all possible states which helps in avoiding subtle bugs. Now, we move on to the game logic itself. 
+
+### Processing Input
+
+We are going to skip the 'reset' function for now since it merely resets the GameState struct to default gameplay values. This takes us to the 'process_input' function:
+
+~~~rust
+fn process_input(state: &mut GameState) {
+        loop {
+
+            // First thing we have to do is to ask for the user to select a tile.
+            // we use a 'read_as_int' function from our 'input_handler' module to turn
+            // text input into an integer value. We bound the entered numbers between 1
+            // and the dimensions of our board.
+            println!("Select a hidden tile\n");
+            let mut column = input_handler::read_as_int("Enter column: ", 1, state.get_width());
+            let mut row = input_handler::read_as_int("Enter row: ", 1, state.get_height());
+
+            // Then we have to zero index the user selections
+            row -= 1;
+            column -= 1;
+
+            // Finally, we have to set the 'selected_tile' field of our 'GameState'
+            // struct by turning the selection into an index with a short equation
+            state.set_selected((row * state.get_width()) + column);
+
+            let index = state.get_selected();
+
+            // Now that we have the selected_tile processed, we can use this to index
+            // into our 'tiles' Vector and match on the Tile's modality.
+            // The exhaustive matching was snipped for brevity, but we essentially
+            // Check the state of the tile selected to decide whether we need further
+            // input, or if we need to reprompt our user in the case where they selected
+            // an already revealed tile.
+            match state.get_tile(index) {
+                Tile::Hidden {
+                    has_mine: x,
+                    flagged: false,
+                } => {
+                    let flag_tile = input_handler::read_as_bool("Flag this tile? Y/n: ");
+                    if flag_tile {
+                        state.set_tile(
+                            index,
+                            Tile::Hidden {
+                                has_mine: *x,
+                                flagged: true,
+                            },
+                        );
+                    } else // { snip ...
+            }
+        }
+    }
+}
+~~~
+
+Once we've processed the user's input, we call a simple update function which just checks if the tile at the selected index is a revealed mine. In that case, we set the 'game_over' field of our 'GameState' to true before rendering our state to the screen with the 'draw' function. Speaking of which, let's move onto examining, 'draw'.
+
+### Rendering the Game to our Display
+
+The draw function is quite simple:
+
+~~~rust
+    fn draw(state: &mut GameState) {
+        
+        // First we simply check for a 'game over' state. If this has occured
+        // we provide a message informing the user that they lost.
+        // We then provide an early return 
+        if state.get_game_over() {
+
+            // In a future iteration we will likely want to set
+            // all mines to a revealed state, and render that to screen.
+            // We might additionally provide some game stats such as how
+            // many mines they found, and how many 'turns' it took to get
+            // to the current state of the game.
+            println!("Game over!");
+            return;
+        }
+
+        // 'clear_screen' is a simple utility method we added that uses the
+        // 'crossterm' crate to execute a platform independent "clear" command
+        // on the console before we draw the new loop's contents.
+        clear_screen();
+
+        // This prints column numbers with a set character width to the column.
+        // We use print! to send our characters to standard output, and then
+        // println! to print a newline character and flush the stdout buffer
+        print!("   ");
+        for col in 0..state.get_width() {
+            print!("{:3}", col + 1);
+        }
+        println!();
+
+        // Finally, we use a double for loop to print each row
+        // Inside of these loops, we see the 'represent_tile' utility method.
+        // This method, when called, takes a tile state and turns it into
+        // a printable textual representation.
+        for row in 0..state.get_height() {
+            print!("{:4}", row + 1); // Print the row number
+
+            for col in 0..state.get_width() {
+                let index = row * state.get_width() + col;
+                let tile_representation = state.represent_tile(index);
+                print!("{tile_representation:3}");
+            }
+
+            println!();
+        }
+    }
+~~~
+
+With this, we draw a board state with characters representing different possible modes of our Tiles. We also have a special "debug" tile representation in the case that there is somehow a value of "None" (represented by the '?' character). This state shouldn't ever happen so we know that, if one of our tiles is rendered as '?', we have a logic issue somewhere to be resolved. 
+
+### Summary
+
+In this section we started the first version of our software that actually looks like minesweeper. We have the skeleton of features like mines and hints, though much of the meat of that functionality remains. We have a board rendered to the screen, and the ability for the user to select a specific tile and act upon it (as by flagging, unflagging, or clearing the tile). There are no mines yet (or, rather, we haven't added them to our board), hints do not indicate what they are supposed to, and we have a lot of improvement we can do for processing input. 
