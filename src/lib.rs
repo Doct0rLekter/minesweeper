@@ -83,6 +83,10 @@ impl GameState {
         self.tiles[index] = tile_state;
     }
 
+    pub fn add_tile(&mut self, tile_state: Tile) {
+        self.tiles.push(tile_state);
+    }
+
     pub fn set_selected(&mut self, index: u32) {
         let selected_tile = index as usize;
         self.selected_tile = Some(selected_tile);
@@ -91,19 +95,33 @@ impl GameState {
     pub fn represent_tile(&mut self, index: u32) -> String {
         let tile = index as usize;
 
-        match self.tiles[tile] {
-            Tile::Hidden { has_mine: _, flagged: true } => String::from(" f "),
-            Tile::Revealed { has_mine: true, hint: _} => String::from(" X "),
-            Tile::Revealed { has_mine: false, hint: x}=> x.to_string(),
-            _ => String::from(" - ")
+        match self.tiles.get(tile) {
+            Some(Tile::Hidden {
+                has_mine: _,
+                flagged: true,
+            }) => String::from(" F "),
+            Some(Tile::Revealed {
+                has_mine: true,
+                hint: _,
+            }) => String::from(" X "),
+            Some(Tile::Revealed {
+                has_mine: false,
+                hint: x,
+            }) => format!(" {} ", x.to_string()),
+            None => String::from(" ? "),
+            _ => String::from(" - "),
         }
+    }
+
+    pub fn clear_tiles(&mut self) {
+        self.tiles = Vec::new();
     }
 }
 
 pub mod game_loop {
     use super::{input_handler, GameState, Tile};
-    use std::io::stdout;
     use crossterm::{execute, terminal};
+    use std::io::stdout;
 
     pub fn play() {
         let mut state = GameState::new();
@@ -134,13 +152,26 @@ pub mod game_loop {
 
     fn reset(state: &mut GameState) {
         state.set_game_over(false);
+
+        state.set_width(5);
+        state.set_height(5);
+        state.clear_tiles();
+
+        let number_of_tiles = state.get_height() * state.get_width();
+
+        for _tile in 0..number_of_tiles {
+            state.add_tile(Tile::Hidden {
+                has_mine: false,
+                flagged: false,
+            });
+        }
     }
 
     fn process_input(state: &mut GameState) {
         loop {
             println!("Select a hidden tile\n");
-            let mut row = input_handler::read_as_int("Enter row: ", 1, state.get_height());
             let mut column = input_handler::read_as_int("Enter column: ", 1, state.get_width());
+            let mut row = input_handler::read_as_int("Enter row: ", 1, state.get_height());
 
             // Turn input into index
             row -= 1;
@@ -208,14 +239,15 @@ pub mod game_loop {
             hint: _,
         } = state.get_tile(index)
         {
-            state.set_game_over(true)
+            state.set_game_over(true);
         }
     }
 
     fn clear_screen() {
         let mut stdout = stdout();
 
-        execute!(stdout, terminal::Clear(terminal::ClearType::All)).expect("Failed to clear screen");
+        execute!(stdout, terminal::Clear(terminal::ClearType::All))
+            .expect("Failed to clear screen");
     }
     fn draw(state: &mut GameState) {
         if state.get_game_over() {
@@ -231,18 +263,17 @@ pub mod game_loop {
         println!();
 
         for row in 0..state.get_height() {
-            print!("{:3}", row + 1); // Print the row number
+            print!("{:4}", row + 1); // Print the row number
 
             for col in 0..state.get_width() {
-                let index = (row * state.get_width() + col) as u32;
+                let index = row * state.get_width() + col;
                 let tile_representation = state.represent_tile(index);
-                print!("{tile_representation}");
+                print!("{tile_representation:3}");
             }
 
             println!();
         }
     }
-    
 }
 
 // Create a new module to handle input to the program
@@ -297,8 +328,8 @@ pub mod input_handler {
             let input = read_input(prompt);
 
             match input.trim().to_lowercase().as_str() {
-                "yes" => break true,
-                "no" => break false,
+                "yes" | "y" | "Y" => break true,
+                "no" | "n" | "N" => break false,
                 _ => println!("Invalid input. Please enter either 'yes' or 'no'."),
             }
         };

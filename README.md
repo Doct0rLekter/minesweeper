@@ -402,5 +402,4 @@ This helps ensure that each public commit represents something that other develo
 
 In this section, we created a framework from which to start developing our 'minesweeper' game. We then put together some simple logic, and tests to probe that logic, to prove the functionality of our framework and stand as a prototype from which to build the full program. We also called out where we may focus some future refactoring of our code base, and discussed some of features of the Rust programming language that were of benefit to our end goals. Finally, we spoke about how we are using Test Driven Development and version control with git to enhance our ability to ensure the program is, and remains, correct. From here, it is now time to start working on turning our engine prototype into something that looks more like Minesweeper.
 
-
 ## Building Minesweeper from the Ground Up
