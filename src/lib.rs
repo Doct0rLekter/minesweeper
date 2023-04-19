@@ -248,6 +248,12 @@ pub mod game_loop {
         } = state.get_tile(index)
         {
             state.set_game_over(true);
+
+            state.tiles.iter_mut().for_each(|tile| {
+                if let Tile::Hidden { has_mine: true, flagged: _ } = tile {
+                    *tile = Tile::Revealed { has_mine: true, hint: 9 };
+                }
+            });
         }
     }
 
