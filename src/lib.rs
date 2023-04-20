@@ -250,8 +250,15 @@ pub mod game_loop {
             state.set_game_over(true);
 
             state.tiles.iter_mut().for_each(|tile| {
-                if let Tile::Hidden { has_mine: true, flagged: _ } = tile {
-                    *tile = Tile::Revealed { has_mine: true, hint: 9 };
+                if let Tile::Hidden {
+                    has_mine: true,
+                    flagged: _,
+                } = tile
+                {
+                    *tile = Tile::Revealed {
+                        has_mine: true,
+                        hint: 9,
+                    };
                 }
             });
         }
@@ -265,10 +272,6 @@ pub mod game_loop {
     }
 
     fn draw(state: &mut GameState) {
-        if state.get_game_over() {
-            println!("Game over!");
-            return;
-        }
         clear_screen();
         // Print the column numbers
         print!("   ");
@@ -276,17 +279,22 @@ pub mod game_loop {
             print!("{:3}", col + 1);
         }
         println!();
-
+        
         for row in 0..state.get_height() {
             print!("{:4}", row + 1); // Print the row number
-
+            
             for col in 0..state.get_width() {
                 let index = row * state.get_width() + col;
                 let tile_representation = state.represent_tile(index);
                 print!("{tile_representation:3}");
             }
-
+            
             println!();
+        }
+
+        if state.get_game_over() { // Consider adding end of game stats
+            println!("Game over!");
+            return;
         }
     }
 }
