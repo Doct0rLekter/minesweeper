@@ -127,7 +127,7 @@ impl GameState {
 }
 
 pub mod game_loop {
-    use super::{input_handler, GameState, Tile};
+    use super::{input_handler, input_handler::InputMode, GameState, Tile};
     use crossterm::{execute, terminal};
     use std::io::stdout;
 
@@ -221,12 +221,20 @@ pub mod game_loop {
     fn process_input(state: &mut GameState) {
         loop {
             println!("Select a hidden tile\n");
-            let mut column = input_handler::read_as_int("Enter column: ", 1, state.get_width());
-            let mut row = input_handler::read_as_int("Enter row: ", 1, state.get_height());
 
-            // Turn input into index
-            row -= 1;
-            column -= 1;
+            let (column, row) = input_handler::read_column_row(
+                "Enter column and row: ",
+                1,
+                state.get_width(),
+                state.get_height(),
+            );
+
+            let input_mode =
+                input_handler::read_input_mode("(C)lear, (F)lag, or (U)ndo selection? ");
+
+            if input_mode == InputMode::Undo {
+                continue;
+            }
 
             state.set_selected((row * state.get_width()) + column);
 
@@ -239,8 +247,7 @@ pub mod game_loop {
                     has_mine: x,
                     flagged: false,
                 } => {
-                    let flag_tile = input_handler::read_as_bool("Flag this tile? Y/n: ");
-                    if flag_tile {
+                    if input_mode == InputMode::Flag {
                         state.set_tile(
                             index,
                             Tile::Hidden {
@@ -263,13 +270,24 @@ pub mod game_loop {
                     has_mine: y,
                     flagged: true,
                 } => {
-                    let unflag_tile = input_handler::read_as_bool("Unflag this tile? Y/n: ");
-                    if unflag_tile {
+                    if input_mode == InputMode::Flag {
                         state.set_tile(
                             index,
                             Tile::Hidden {
                                 has_mine: *y,
                                 flagged: false,
+                            },
+                        );
+                        break;
+                    }
+                    let clear_anyways =
+                        input_handler::read_as_bool("Tile is flagged, clear anyways? (Y/n): ");
+                    if clear_anyways {
+                        state.set_tile(
+                            index,
+                            Tile::Revealed {
+                                has_mine: *y,
+                                hint: if *y { 10 } else { stored_hint },
                             },
                         );
                         break;
@@ -316,12 +334,18 @@ pub mod game_loop {
             .expect("Failed to clear screen");
     }
 
+    #[allow(clippy::cast_possible_truncation)] // Our column number will never go above u8.
+                                               // May refactor to be u8 by default?
+    fn column_to_letter(col: u32) -> char {
+        ((col as u8) + b'A') as char
+    }
+
     fn draw(state: &mut GameState) {
         clear_screen();
         // Print the column numbers
-        print!("   ");
+        print!("     ");
         for col in 0..state.get_width() {
-            print!("{:3}", col + 1);
+            print!("{:3}", column_to_letter(col));
         }
         println!();
 
@@ -348,6 +372,13 @@ pub mod game_loop {
 pub mod input_handler {
 
     use std::io::{self, Write};
+
+    #[derive(PartialEq)]
+    pub enum InputMode {
+        Clear,
+        Flag,
+        Undo,
+    }
 
     #[must_use]
     #[allow(clippy::missing_panics_doc)] // This function is unlikely to panic under normal circumstances
@@ -421,6 +452,53 @@ pub mod input_handler {
             println!("Invalid input. Please enter an integer.");
         };
         input
+    }
+
+    #[must_use]
+    pub fn read_column_row(prompt: &str, min: u32, width: u32, height: u32) -> (u32, u32) {
+        let (column, row) = loop {
+            let input = read_input(prompt);
+            let mut chars = input.chars();
+
+            let column_char = chars.next();
+            let column_number = if let Some(c) = column_char {
+                (c.to_ascii_lowercase() as u32) - ('a' as u32)
+            } else {
+                println!("Invalid input. Please enter a valid column and row.");
+                continue;
+            };
+
+            let row_number = chars.as_str().parse::<u32>();
+            match row_number {
+                Ok(n) => {
+                    if column_number >= min - 1 && column_number < width && n >= min && n <= height
+                    {
+                        break (column_number, n - 1);
+                    }
+                    println!("Column and row must be within valid bounds.");
+                }
+                Err(_) => println!("Invalid input. Please enter a valid column and row."),
+            }
+        };
+
+        (column, row)
+    }
+
+    #[must_use]
+    pub fn read_input_mode(prompt: &str) -> InputMode {
+        let input_mode = loop {
+            let input = read_input(prompt);
+            let lower_input = input.trim().to_lowercase();
+
+            match lower_input.as_str() {
+                "clear" | "c" => break InputMode::Clear,
+                "flag" | "f" => break InputMode::Flag,
+                "undo" | "u" => break InputMode::Undo,
+                _ => println!("Invalid input. Please enter a valid input mode."),
+            }
+        };
+
+        input_mode
     }
 }
 
