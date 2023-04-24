@@ -182,6 +182,42 @@ pub mod game_loop {
         }
     }
 
+    #[allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)] // We check for bounds and ensure we are not wrapping values
+    fn calculate_hint(state: &GameState, index: usize) -> u32 {
+        let width = state.get_width() as isize;
+        let height = state.get_height() as isize;
+
+        let index_x = index as isize % width;
+        let index_y = index as isize / width;
+
+        let mut count = 0;
+
+        for row_offset in -1..=1 {
+            for col_offset in -1..=1 {
+                if row_offset == 0 && col_offset == 0 {
+                    continue;
+                }
+
+                let neighbor_x = index_x + col_offset;
+                let neighbor_y = index_y + row_offset;
+
+                if neighbor_x >= 0 && neighbor_x < width && neighbor_y >= 0 && neighbor_y < height {
+                    let neighbor_index = (neighbor_y * width + neighbor_x) as usize;
+
+                    if let Tile::Hidden {
+                        has_mine: true,
+                        flagged: _,
+                    } = state.get_tile(neighbor_index)
+                    {
+                        count += 1;
+                    }
+                }
+            }
+        }
+
+        count
+    }
+
     fn process_input(state: &mut GameState) {
         loop {
             println!("Select a hidden tile\n");
@@ -195,6 +231,8 @@ pub mod game_loop {
             state.set_selected((row * state.get_width()) + column);
 
             let index = state.get_selected();
+
+            let stored_hint = calculate_hint(state, index);
 
             match state.get_tile(index) {
                 Tile::Hidden {
@@ -215,7 +253,7 @@ pub mod game_loop {
                             index,
                             Tile::Revealed {
                                 has_mine: *x,
-                                hint: if *x { 10 } else { 0 },
+                                hint: if *x { 10 } else { stored_hint },
                             },
                         );
                     }
@@ -264,7 +302,7 @@ pub mod game_loop {
                 {
                     *tile = Tile::Revealed {
                         has_mine: true,
-                        hint: 9,
+                        hint: 10,
                     };
                 }
             });
