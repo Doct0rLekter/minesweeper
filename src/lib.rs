@@ -167,11 +167,18 @@ pub mod game_loop {
 
         let number_of_tiles = state.get_height() * state.get_width();
 
-        for _tile in 0..number_of_tiles {
-            state.add_tile(Tile::Hidden {
-                has_mine: false,
-                flagged: false,
-            });
+        for tile in 0..number_of_tiles {
+            if (tile % 6) == 0 {
+                state.add_tile(Tile::Hidden {
+                    has_mine: true,
+                    flagged: false,
+                });
+            } else {
+                state.add_tile(Tile::Hidden {
+                    has_mine: false,
+                    flagged: false,
+                });
+            }
         }
     }
 
@@ -279,22 +286,22 @@ pub mod game_loop {
             print!("{:3}", col + 1);
         }
         println!();
-        
+
         for row in 0..state.get_height() {
             print!("{:4}", row + 1); // Print the row number
-            
+
             for col in 0..state.get_width() {
                 let index = row * state.get_width() + col;
                 let tile_representation = state.represent_tile(index);
                 print!("{tile_representation:3}");
             }
-            
+
             println!();
         }
 
-        if state.get_game_over() { // Consider adding end of game stats
+        if state.get_game_over() {
+            // Consider adding end of game stats
             println!("Game over!");
-            return;
         }
     }
 }
