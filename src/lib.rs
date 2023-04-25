@@ -19,6 +19,7 @@ use input_handler::InputMode;
 // Provide structure to game data
 pub struct GameState {
     game_over: bool,
+    game_won: bool,
     board_width: u32,
     board_height: u32,
     tiles: Vec<Tile>,
@@ -44,6 +45,7 @@ impl GameState {
     pub fn new() -> GameState {
         GameState {
             game_over: false,
+            game_won: false,
             board_height: 0,
             board_width: 0,
             tiles: Vec::new(),
@@ -355,6 +357,10 @@ pub mod game_loop {
         }
     }
 
+    fn check_for_win() {
+        todo!()  
+    }
+
     fn update(state: &mut GameState) {
         let index = state.get_selected();
         let stored_hint = calculate_hint(state, index);
@@ -381,6 +387,8 @@ pub mod game_loop {
         } else if state.get_input_mode() == InputMode::Clear && stored_hint == 0 {
             reveal_neighbors(state, index);
         }
+
+        check_for_win(state);
     }
 
     fn clear_screen() {
