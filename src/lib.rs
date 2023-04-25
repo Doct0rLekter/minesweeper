@@ -94,18 +94,18 @@ impl GameState {
     pub fn set_width(&mut self, width: u32) {
         self.board_width = width;
     }
-    
+
     pub fn set_tile(&mut self, index: usize, tile_state: Tile) {
         self.tiles[index] = tile_state;
     }
-    
+
     pub fn set_selected(&mut self, index: u32) {
         let selected_tile = index as usize;
         self.selected_tile = Some(selected_tile);
     }
-    
+
     pub fn set_input_mode(&mut self, input_mode: InputMode) {
-        self.input_mode = input_mode
+        self.input_mode = input_mode;
     }
 
     pub fn add_tile(&mut self, tile_state: Tile) {
@@ -136,7 +136,6 @@ impl GameState {
     pub fn clear_tiles(&mut self) {
         self.tiles = Vec::new();
     }
-
 }
 
 pub mod game_loop {
@@ -195,15 +194,15 @@ pub mod game_loop {
         }
     }
 
-    #[allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)] // We check for bounds and ensure we are not wrapping values
-    fn calculate_hint(state: &GameState, index: usize) -> u32 {
+    #[allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)]
+    fn find_neighbors(state: &GameState, index: usize) -> Vec<usize> {
         let width = state.get_width() as isize;
         let height = state.get_height() as isize;
 
         let index_x = index as isize % width;
         let index_y = index as isize / width;
 
-        let mut count = 0;
+        let mut neighbors = Vec::new();
 
         for row_offset in -1..=1 {
             for col_offset in -1..=1 {
@@ -216,15 +215,27 @@ pub mod game_loop {
 
                 if neighbor_x >= 0 && neighbor_x < width && neighbor_y >= 0 && neighbor_y < height {
                     let neighbor_index = (neighbor_y * width + neighbor_x) as usize;
-
-                    if let Tile::Hidden {
-                        has_mine: true,
-                        flagged: _,
-                    } = state.get_tile(neighbor_index)
-                    {
-                        count += 1;
-                    }
+                    neighbors.push(neighbor_index);
                 }
+            }
+        }
+
+        neighbors
+    }
+
+    #[allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)] // We check for bounds and ensure we are not wrapping values
+    fn calculate_hint(state: &GameState, index: usize) -> u32 {
+        let neighbors = find_neighbors(state, index);
+
+        let mut count = 0;
+
+        for &neighbor_index in &neighbors {
+            if let Tile::Hidden {
+                has_mine: true,
+                flagged: _,
+            } = state.get_tile(neighbor_index)
+            {
+                count += 1;
             }
         }
 
@@ -249,6 +260,7 @@ pub mod game_loop {
                 continue;
             }
 
+            state.set_input_mode(input_mode);
             state.set_selected((row * state.get_width()) + column);
 
             let index = state.get_selected();
@@ -315,6 +327,10 @@ pub mod game_loop {
         }
     }
 
+    fn reveal_zeroes(_state: &mut GameState, _index: usize) {
+        todo!()
+    }
+
     fn update(state: &mut GameState) {
         let index = state.get_selected();
 
@@ -337,7 +353,9 @@ pub mod game_loop {
                     };
                 }
             });
-        }
+        } //else if state.get_input_mode() == InputMode::Clear {
+          //reveal_zeroes(state, index);
+          //}
     }
 
     fn clear_screen() {
