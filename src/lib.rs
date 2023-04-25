@@ -15,6 +15,7 @@
 // It should be noted that the games created in "Hands on Rust" are a Flappy Bird clone,
 // and a roguelike dungeon crawler which I've yet to start on.
 
+use input_handler::InputMode;
 // Provide structure to game data
 pub struct GameState {
     game_over: bool,
@@ -22,6 +23,7 @@ pub struct GameState {
     board_height: u32,
     tiles: Vec<Tile>,
     selected_tile: Option<usize>,
+    input_mode: InputMode,
 }
 
 // Provide type checked names to capture the state of our tiles
@@ -46,6 +48,7 @@ impl GameState {
             board_width: 0,
             tiles: Vec::new(),
             selected_tile: None,
+            input_mode: InputMode::Undo,
         }
     }
 
@@ -75,6 +78,11 @@ impl GameState {
             .expect("Should always have 'Some' value during normal play.")
     }
 
+    #[must_use]
+    pub fn get_input_mode(&self) -> InputMode {
+        self.input_mode
+    }
+
     pub fn set_game_over(&mut self, game_over: bool) {
         self.game_over = game_over;
     }
@@ -86,18 +94,22 @@ impl GameState {
     pub fn set_width(&mut self, width: u32) {
         self.board_width = width;
     }
-
+    
     pub fn set_tile(&mut self, index: usize, tile_state: Tile) {
         self.tiles[index] = tile_state;
+    }
+    
+    pub fn set_selected(&mut self, index: u32) {
+        let selected_tile = index as usize;
+        self.selected_tile = Some(selected_tile);
+    }
+    
+    pub fn set_input_mode(&mut self, input_mode: InputMode) {
+        self.input_mode = input_mode
     }
 
     pub fn add_tile(&mut self, tile_state: Tile) {
         self.tiles.push(tile_state);
-    }
-
-    pub fn set_selected(&mut self, index: u32) {
-        let selected_tile = index as usize;
-        self.selected_tile = Some(selected_tile);
     }
 
     pub fn represent_tile(&mut self, index: u32) -> String {
@@ -124,6 +136,7 @@ impl GameState {
     pub fn clear_tiles(&mut self) {
         self.tiles = Vec::new();
     }
+
 }
 
 pub mod game_loop {
@@ -302,7 +315,7 @@ pub mod game_loop {
         }
     }
 
-    pub fn update(state: &mut GameState) {
+    fn update(state: &mut GameState) {
         let index = state.get_selected();
 
         if let Tile::Revealed {
@@ -373,7 +386,7 @@ pub mod input_handler {
 
     use std::io::{self, Write};
 
-    #[derive(PartialEq)]
+    #[derive(PartialEq, Debug, Clone, Copy)]
     pub enum InputMode {
         Clear,
         Flag,
@@ -549,6 +562,15 @@ mod test {
     }
 
     #[test]
+    fn gets_input_mode() {
+        let mut state = GameState::new();
+
+        state.input_mode = InputMode::Clear;
+
+        assert_eq!(InputMode::Clear, state.get_input_mode());
+    }
+
+    #[test]
     fn sets_game_over() {
         let mut state = GameState::new();
         state.set_game_over(true);
@@ -605,11 +627,10 @@ mod test {
     }
 
     #[test]
-    fn updates_state() {
+    fn sets_input_mode() {
         let mut state = GameState::new();
+        state.set_input_mode(InputMode::Flag);
 
-        game_loop::update(&mut state);
-
-        assert_eq!(true, state.get_game_over());
+        assert_eq!(state.input_mode, InputMode::Flag)
     }
 }
