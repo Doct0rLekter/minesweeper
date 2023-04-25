@@ -327,12 +327,37 @@ pub mod game_loop {
         }
     }
 
-    fn reveal_zeroes(_state: &mut GameState, _index: usize) {
-        todo!()
+    fn reveal_neighbors(state: &mut GameState, index: usize) {
+        let neighbors = find_neighbors(state, index);
+
+        for neighbor_index in neighbors {
+            let tile = state.get_tile(neighbor_index);
+
+            if let Tile::Hidden {
+                has_mine: false,
+                flagged: false,
+            } = tile
+            {
+                let hint = calculate_hint(state, neighbor_index);
+
+                state.set_tile(
+                    neighbor_index,
+                    Tile::Revealed {
+                        has_mine: false,
+                        hint,
+                    },
+                );
+
+                if hint == 0 {
+                    reveal_neighbors(state, neighbor_index);
+                }
+            }
+        }
     }
 
     fn update(state: &mut GameState) {
         let index = state.get_selected();
+        let stored_hint = calculate_hint(state, index);
 
         if let Tile::Revealed {
             has_mine: true,
@@ -353,9 +378,9 @@ pub mod game_loop {
                     };
                 }
             });
-        } //else if state.get_input_mode() == InputMode::Clear {
-          //reveal_zeroes(state, index);
-          //}
+        } else if state.get_input_mode() == InputMode::Clear && stored_hint == 0 {
+            reveal_neighbors(state, index);
+        }
     }
 
     fn clear_screen() {
