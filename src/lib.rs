@@ -85,6 +85,11 @@ impl GameState {
         self.input_mode
     }
 
+    #[must_use]
+    pub fn get_won(&self) -> bool {
+        self.game_won
+    }
+
     pub fn set_game_over(&mut self, game_over: bool) {
         self.game_over = game_over;
     }
@@ -108,6 +113,10 @@ impl GameState {
 
     pub fn set_input_mode(&mut self, input_mode: InputMode) {
         self.input_mode = input_mode;
+    }
+
+    pub fn set_won(&mut self, game_won: bool) {
+        self.game_won = game_won;
     }
 
     pub fn add_tile(&mut self, tile_state: Tile) {
@@ -156,8 +165,9 @@ pub mod game_loop {
 
         loop {
             let game_over = state.get_game_over();
+            let won = state.get_won();
 
-            if game_over {
+            if game_over || won {
                 break;
             }
 
@@ -357,8 +367,28 @@ pub mod game_loop {
         }
     }
 
-    fn check_for_win() {
-        todo!()  
+    fn check_for_win(state: &mut GameState) {
+        let mut winner = true;
+
+        for tile in &state.tiles {
+            match tile {
+                Tile::Revealed {
+                    has_mine: false,
+                    hint: _,
+                }
+                | Tile::Hidden {
+                    has_mine: true,
+                    flagged: _,
+                } => continue,
+                _ => {
+                    winner = false;
+                    break;
+                }
+            }
+        }
+        if winner {
+            state.set_won(winner);
+        }
     }
 
     fn update(state: &mut GameState) {
@@ -428,6 +458,10 @@ pub mod game_loop {
         if state.get_game_over() {
             // Consider adding end of game stats
             println!("Game over!");
+        }
+        
+        if state.get_won() {
+            println!("Congratulations, you found all of the mines!");
         }
     }
 }
@@ -622,6 +656,15 @@ mod test {
     }
 
     #[test]
+    fn gets_won() {
+        let mut state = GameState::new();
+
+        state.game_won = true;
+
+        assert_eq!(true, state.get_won());
+    }
+
+    #[test]
     fn sets_game_over() {
         let mut state = GameState::new();
         state.set_game_over(true);
@@ -683,5 +726,13 @@ mod test {
         state.set_input_mode(InputMode::Flag);
 
         assert_eq!(state.input_mode, InputMode::Flag)
+    }
+
+    #[test]
+    fn sets_won() {
+        let mut state = GameState::new();
+        state.set_won(true);
+
+        assert_eq!(state.game_won, true)
     }
 }
