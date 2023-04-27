@@ -235,7 +235,7 @@ pub mod game_loop {
         neighbors
     }
 
-    #[allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)] // We check for bounds and ensure we are not wrapping values
+    
     fn calculate_hint(state: &GameState, index: usize) -> u32 {
         let neighbors = find_neighbors(state, index);
 

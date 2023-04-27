@@ -33,7 +33,7 @@ Now, as a matter of habit, I recreate Minesweeper whenever I want to really lear
 - Prove basic understanding of software design:
   - Documenting the process of design
   - Breaking a problem down into smaller problems for easier processing
-  - Splitting the design into discrete versions from conception to minimum viable product to a richly featured "end" product
+  - Splitting the design into discrete versions from conception to a fully featured minimum viable product
 
 ## First Steps
 
@@ -592,3 +592,286 @@ With this, we draw a board state with characters representing different possible
 ### Summary
 
 In this section we started the first version of our software that actually looks like minesweeper. We have the skeleton of features like mines and hints, though much of the meat of that functionality remains. We have a board rendered to the screen, and the ability for the user to select a specific tile and act upon it (as by flagging, unflagging, or clearing the tile). There are no mines yet (or, rather, we haven't added them to our board), hints do not indicate what they are supposed to, and we have a lot of improvement we can do for processing input. 
+
+## Echoes of a Complete Game
+
+At this point, we've reached what we will call our internal 0.3.0 version. In this version, we have reached a point where you could technically call our minesweeper clone a game; however, it would be more accurate to call it a puzzle. Like a classic puzzle it is a box that can be opened once and solved, but once solved there is no dynamism to make revisiting our puzzle worthwhile. We have hardcoded board parameters, unchanging mine locations, and haven't even included a way to restart our game yet. We will likely be implementing some sort of "state machine" to give us the ability to efficiently change between menu, gameplay, and gameover screens. Still, for now let's focus on what we have complete: 
+
+We have fully implemented hints and we can chain clear tiles surrounding a '0' hint to help avoid excesses of manual clearing,
+
+~~~
+     A  B  C  D  E  
+   1 -  -  1  0  0 
+   2 -  -  2  1  0 
+   3 1  2  -  2  1 
+   4 0  1  2  -  - 
+   5 0  0  1  -  - 
+Select a hidden tile
+
+Enter column and row: 
+~~~
+
+We have the ability for the user to win the game,
+
+~~~
+     A  B  C  D  E  
+   1 -  2  1  0  0 
+   2 2  -  2  1  0 
+   3 1  2  -  2  1 
+   4 0  1  2  -  2 
+   5 0  0  1  2  - 
+Congratulations, you found all of the mines!
+~~~
+
+and a fully implemented gameover that reveals the locations of all mines,
+
+~~~
+     A  B  C  D  E  
+   1 X  -  -  -  - 
+   2 -  X  -  -  - 
+   3 -  -  X  -  - 
+   4 -  -  -  X  - 
+   5 -  -  -  -  X 
+Game over!
+~~~
+
+And finally, we have made great strides in improving the user experience for selecting, flagging, unflagging, and clearing mines.
+
+~~~
+     A  B  C  D  E  
+   1 -  -  -  -  - 
+   2 -  -  -  -  - 
+   3 -  -  -  -  - 
+   4 -  -  -  -  - 
+   5 -  -  -  -  - 
+Select a hidden tile
+
+Enter column and row: a1
+(C)lear, (F)lag, or (U)ndo selection? c
+~~~
+
+How did we get here? As before, the most illustrative way to get the full picture is to look at the commit history of the GitHub repository; however, we will go through some select additions. We've reworked a lot of our 'process_input' function, and made some changes to our update function but I want to spotlight the helper functions that have brought us to this point since they are where the major logic changes have been implemented. We will start with how we implemented hints:
+
+### Calculating Nearby Mines
+
+The "calculate_hint" function takes the index of the tile in question, checks neighboring tiles (through "find_neighbors" which we will explain shortly), and returns the number of neighboring tiles with mines:
+
+~~~rust
+    fn calculate_hint(state: &GameState, index: usize) -> u32 {
+        // A vector is initialized with the indices of
+        // neighboring tiles.
+        let neighbors = find_neighbors(state, index);
+
+        // We initialize a variable to hold the number
+        // of mines in neighbors.
+        let mut count = 0;
+
+        // Finally, we loop through the neighbors vector
+        // and use an if let statement to update the count
+        for &neighbor_index in &neighbors {
+            if let Tile::Hidden {
+                has_mine: true,
+                flagged: _,
+            } = state.get_tile(neighbor_index)
+            {
+                count += 1;
+            }
+        }
+
+        count
+    }
+~~~
+
+The function is much simplified because we eventually extracted the logic for finding neighboring tiles. That refactor happened once we realized the logic was also needed in a second function:
+
+### Revealing Neighboring Tiles
+
+In the game of minesweeper, clicking a '0' hinted (empty) tile clears all nearby tiles. We needed a function to separate this logic out (so to minimize bloat in our update function), and that is where "reveal_neighbors" comes into play:
+
+~~~rust
+    fn reveal_neighbors(state: &mut GameState, index: usize) {
+        // Halfway through writing this function we recognized that we
+        // needed the same logic of finding neighboring tiles here
+        // that was required for calculating hints.
+        // At was at this point the decision was made to refactor
+        // that logic into it's own function and call it from both
+        // helpers. It was a helper helper, so to speak.
+        let neighbors = find_neighbors(state, index);
+
+        // Now we loop through our neighbors vector to clear them,
+        // but only so long as they are not mined or flagged.
+        for neighbor_index in neighbors {
+            let tile = state.get_tile(neighbor_index);
+
+            if let Tile::Hidden {
+                has_mine: false,
+                flagged: false,
+            } = tile
+            {
+                // We need to calculate our hint to properly reveal the tile
+                let hint = calculate_hint(state, neighbor_index);
+
+                state.set_tile(
+                    neighbor_index,
+                    Tile::Revealed {
+                        has_mine: false,
+                        hint,
+                    },
+                );
+
+                if hint == 0 {
+                    // Finally, if the tile is a zero_hinted tile,
+                    // we want to continue recursively checking neighbors
+                    // until we have cleared all appropriate tiles.
+                    reveal_neighbors(state, neighbor_index);
+                }
+            }
+        }
+    }
+~~~
+
+As stated above, as we began this function we recognized shared logic that could be more cleanly
+represented by its own function, 'find_neighbors':
+
+### Refactoring Shared Logic
+
+Before getting into, 'find_neighbors', let us talk in more depth about the process behind deciding to refactor. I don't necessarily fully believe in the concept of "DRY". There are times where I don't think the extraction of logic into a new function adds much to clarity or ergonomics, and so I generally adhere more closely to the "WET" concept: Write Everything Twice. As with anything, fanatical adherence to one or the other is a fools errand. If the repeated logic is complex enough that the functions greatly improve in clarity when it is extracted then you should do so immediately. If the logic is so prevalent and consistent that there is a sizeable ergonomic gain then you should refactor it. If the logic is simple enough that there is no benefit then you should hold off. The important part is recognizing, "why" you would be extracting it and only doing so when there is a good reason (be it clarity, ergonomics, or both).
+
+Without further ado, let's find some neighbors:
+
+~~~rust
+    // We cast a lot of our usize variables to isize to support negative indexes. 
+    // This allows us to 'look backwards' at neighbors in x and y directions to create a grid.
+    // We allow sign loss and possible wrap to go unwarned 
+    // because we ensure they will be within bounds.
+    #[allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)]
+    fn find_neighbors(state: &GameState, index: usize) -> Vec<usize> {
+        let width = state.get_width() as isize;
+        let height = state.get_height() as isize;
+
+        let index_x = index as isize % width;
+        let index_y = index as isize / width;
+
+        // We are storing the neighbor indices in a vector to send to other functions
+        let mut neighbors = Vec::new();
+
+        // Check the grid while making sure out of bounds indices are not
+        // added to the grid
+        for row_offset in -1..=1 {
+            for col_offset in -1..=1 {
+                if row_offset == 0 && col_offset == 0 {
+                    continue;
+                }
+
+                let neighbor_x = index_x + col_offset;
+                let neighbor_y = index_y + row_offset;
+
+                if neighbor_x >= 0 && neighbor_x < width && neighbor_y >= 0 && neighbor_y < height {
+                    // If the tile would be in bounds, it's index is calculated
+                    // and it is added to our vector
+                    let neighbor_index = (neighbor_y * width + neighbor_x) as usize;
+                    neighbors.push(neighbor_index);
+                }
+            }
+        }
+
+        neighbors
+    }
+~~~
+
+Next we have a batch of two helpers from our "input_handler" module, "read_column_row", and "read_input_mode':
+
+### Improving the User Experience
+
+We will deal with these functions (and one important data structure added) as a batch:
+
+~~~rust
+
+    // Let's start with the data structure. Instead of a series of
+    // yes or no questions: we will instead divide input into three types.
+    #[derive(PartialEq, Debug, Clone, Copy)]
+    pub enum InputMode {
+        Clear, // This indicates the user wishes to clear the selected tile
+        Flag, // This indicates the user wishes to flag or unflag the tile
+        Undo, // This indicates the user wishes to select a different tile
+    }
+
+    /* Snip... */
+
+
+    // The first UX improvement is turning column and row selection
+    // into a single command. 
+    // 'read_column_row' takes some bounds checking parameters
+    // and returns a tuple representing column and then row.
+    #[must_use]
+    pub fn read_column_row(prompt: &str, min: u32, width: u32, height: u32) -> (u32, u32) {
+        let (column, row) = loop {
+            // We use the usual input capture helper and then
+            // create an iterator over the input characters
+            let input = read_input(prompt);
+            let mut chars = input.chars();
+
+            // We use our iterator to process the first char
+            // into an appropriate integer.
+            let column_char = chars.next();
+            let column_number = if let Some(c) = column_char {
+                (c.to_ascii_lowercase() as u32) - ('a' as u32)
+            } else {
+                println!("Invalid input. Please enter a valid column and row.");
+                continue;
+            };
+
+            // Then we turn the iterator of characters back into
+            // a string so we can parse it to an unsigned integer.
+            let row_number = chars.as_str().parse::<u32>();
+
+            // Finally, we do some error and bounds checking so
+            // we can reprompt the user if there is an issue with their input.
+            match row_number {
+                Ok(n) => {
+                    if column_number >= min - 1 && column_number < width && n >= min && n <= height
+                    {
+                        break (column_number, n - 1);
+                    }
+                    println!("Column and row must be within valid bounds.");
+                }
+                Err(_) => println!("Invalid input. Please enter a valid column and row."),
+            }
+        };
+
+        // If everything checks out, we return our tuple
+        (column, row)
+    }
+    
+    // The next UX improvement uses our 'InputMode' enum
+    // To clearly delineate user intent for our input
+    // processing logic.
+    #[must_use]
+    pub fn read_input_mode(prompt: &str) -> InputMode {
+        // We loop over, and process, user input
+        // until they enter a valid symbol. 
+        // We do so case insensitively.
+        let input_mode = loop {
+            let input = read_input(prompt);
+            let lower_input = input.trim().to_lowercase();
+
+            match lower_input.as_str() {
+                "clear" | "c" => break InputMode::Clear,
+                "flag" | "f" => break InputMode::Flag,
+                "undo" | "u" => break InputMode::Undo,
+                _ => println!("Invalid input. Please enter a valid input mode."),
+            }
+        };
+
+        // After checking for invalid entries,
+        // we return the input mode.
+        input_mode
+    }
+~~~
+
+These improvements significantly improve ability to effectively select and process tiles for the user. Having letters and numbers to represent columns vs rows is a time tested methodology, and putting everything in one command means fewer opportunities for a mistake. Changing the interaction with the tiles to a simple modal process also provides more clarity to the user (and the codebase) than context based "yes/no" entries. Having a clear way to change selection also reduces frustration that might arise by mistyping a valid, but unintended, tile on the board. Instead a user can simply undo their selection and enter the correct tile. After this, there are a couple of less complex/important/informative helper functions. Namely: "check_for_win," which does exactly what it says by checking on each loop whether the player has revealed all of the mines, and "column_to_letter" which is an incredibly simple function that takes a column number and turns it into a character. 
+
+### Summary
+
+In this section, we finally have a playable minesweeper puzzle. We took the opportunity to explore when it is appropriate to extract logic out into its own function, and the dangers of holding didactically to any specific concept or paradigm. We have made significant improvements to the user experience by implementing chain clearing and more user friendly input handling. Now, we need to turn our puzzle into a game with randomized mine placement, board configuration, and a starting/ending menu. We will also need to add a mine tracker, and some end-of-game stats.
+
