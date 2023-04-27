@@ -235,7 +235,6 @@ pub mod game_loop {
         neighbors
     }
 
-    
     fn calculate_hint(state: &GameState, index: usize) -> u32 {
         let neighbors = find_neighbors(state, index);
 
@@ -459,7 +458,7 @@ pub mod game_loop {
             // Consider adding end of game stats
             println!("Game over!");
         }
-        
+
         if state.get_won() {
             println!("Congratulations, you found all of the mines!");
         }
