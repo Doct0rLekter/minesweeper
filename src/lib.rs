@@ -37,7 +37,9 @@ pub struct GameState {
     game_won: bool,
     board_width: u32,
     board_height: u32,
-    num_mines: u32,
+    starting_mines: u32,
+    mine_count: u32,
+    turn_count: u32,
     tiles: Vec<Tile>,
     selected_tile: Option<usize>,
     input_mode: InputMode,
@@ -65,7 +67,9 @@ impl GameState {
             game_won: false,
             board_height: 0,
             board_width: 0,
-            num_mines: 0,
+            starting_mines: 0,
+            mine_count: 0,
+            turn_count: 0,
             tiles: Vec::new(),
             selected_tile: None,
             input_mode: InputMode::Undo,
@@ -110,12 +114,22 @@ impl GameState {
 
     #[must_use]
     pub fn get_mines(&self) -> u32 {
-        self.num_mines
+        self.starting_mines
     }
 
     #[must_use]
     pub fn get_game_mode(&self) -> GameMode {
         self.game_mode
+    }
+
+    #[must_use]
+    pub fn get_mine_count(&self) -> u32 {
+        self.mine_count
+    }
+
+    #[must_use]
+    pub fn get_turn_count(&self) -> u32 {
+        self.turn_count
     }
 
     pub fn set_game_over(&mut self, game_over: bool) {
@@ -148,17 +162,26 @@ impl GameState {
     }
 
     pub fn set_mines(&mut self, num_mines: u32) {
-        self.num_mines = num_mines;
+        self.starting_mines = num_mines;
     }
 
     pub fn set_game_mode(&mut self, game_mode: GameMode) {
         self.game_mode = game_mode;
     }
 
+    pub fn set_mine_count(&mut self, mine_count: u32) {
+        self.mine_count = mine_count;
+    }
+
     pub fn board_setup(&mut self, width: u32, height: u32, num_mines: u32) {
         self.board_width = width;
         self.board_height = height;
-        self.num_mines = num_mines;
+        self.starting_mines = num_mines;
+        self.mine_count = num_mines;
+        self.turn_count = 0;
+        self.game_won = false;
+        self.game_over = false;
+        self.clear_tiles();
     }
 
     pub fn add_tile(&mut self, tile_state: Tile) {
@@ -189,6 +212,18 @@ impl GameState {
     pub fn clear_tiles(&mut self) {
         self.tiles = Vec::new();
     }
+
+    pub fn increment_turn_count(&mut self) {
+        self.turn_count += 1;
+    }
+
+    pub fn increment_mine_count(&mut self) {
+        self.mine_count += 1;
+    }
+
+    pub fn decrement_mine_count(&mut self) {
+        self.mine_count -= 1;
+    }
 }
 
 pub mod game_loop {
@@ -199,8 +234,8 @@ pub mod game_loop {
     use std::io::stdout;
 
     pub fn play() {
-        let mut state = GameState::new();
         loop {
+            let mut state = GameState::new();
             let (mode, difficulty) = menu();
 
             if mode == GameMode::Quit {
@@ -326,14 +361,11 @@ pub mod game_loop {
     }
 
     fn setup(state: &mut GameState, difficulty: &Difficulty) {
-        state.set_game_over(false);
         match difficulty {
             Difficulty::Easy => state.board_setup(5, 5, 4),
             Difficulty::Medium => state.board_setup(8, 8, 14),
             Difficulty::Hard => state.board_setup(12, 12, 35),
         }
-
-        state.clear_tiles();
 
         let number_of_tiles = state.get_height() * state.get_width();
 
@@ -419,6 +451,9 @@ pub mod game_loop {
 
             let stored_hint = calculate_hint(state, index);
 
+            let mine_count = state.get_mine_count();
+            let max_mines = state.get_mines();
+
             match state.get_tile(index) {
                 Tile::Hidden {
                     has_mine: x,
@@ -432,6 +467,10 @@ pub mod game_loop {
                                 flagged: true,
                             },
                         );
+
+                        if mine_count > 0 {
+                            state.decrement_mine_count();
+                        }
                     } else {
                         state.set_tile(
                             index,
@@ -455,6 +494,9 @@ pub mod game_loop {
                                 flagged: false,
                             },
                         );
+                        if mine_count < max_mines {
+                            state.increment_mine_count();
+                        }
                         break;
                     }
                     let clear_anyways =
@@ -532,6 +574,8 @@ pub mod game_loop {
     }
 
     fn update(state: &mut GameState) {
+        state.increment_turn_count();
+
         let index = state.get_selected();
         let stored_hint = calculate_hint(state, index);
 
@@ -576,6 +620,11 @@ pub mod game_loop {
 
     fn draw(state: &mut GameState) {
         clear_screen();
+
+        let mine_count = state.get_mine_count();
+        let turn_count = state.get_turn_count() + 1;
+
+        println!("Turn: {turn_count}\nRemaining Mines: {mine_count}\n");
         // Print the column numbers
         print!("     ");
         for col in 0..state.get_width() {
@@ -774,8 +823,9 @@ pub mod input_handler {
         difficulty
     }
 
+    #[allow(clippy::missing_panics_doc)]
     pub fn enter_to_continue() {
-        let mut input= String::new();
+        let mut input = String::new();
         print!("Press enter to continue... ");
 
         // # Panics
@@ -783,7 +833,7 @@ pub mod input_handler {
         // This function will panic if flushing the stdout buffer fails.
         // However, this is unlikely to happen under normal circumstances.
         io::stdout().flush().unwrap();
-       
+
         // # Panics
         //
         // This function will panic if reading from stdin fails.
@@ -863,7 +913,7 @@ mod test {
     fn gets_mines() {
         let mut state = GameState::new();
 
-        state.num_mines = 6;
+        state.starting_mines = 6;
 
         assert_eq!(6, state.get_mines());
     }
@@ -954,7 +1004,7 @@ mod test {
         let mut state = GameState::new();
         state.set_mines(6);
 
-        assert_eq!(state.num_mines, 6)
+        assert_eq!(state.starting_mines, 6)
     }
 
     #[test]
