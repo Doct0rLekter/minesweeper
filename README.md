@@ -398,7 +398,7 @@ To get a more full picture of the minute details of this process one may look at
 
 This helps ensure that each public commit represents something that other developers, testers, and potentially users can reliably contribute to, test, or use. For a project where there is only one person developing it this may not seem particularly important; however, what if we were to add more developers? What if we wanted to ask someone to test it? Even if we never do either, we will likely want/need to work in a team at some point, and you perform in the same way you practice. If you cut corners when practicing what is to say you won't do the same in a production environment? This makes it of crucial importance to try and follow best practices insofar as you have learned and can possibly follow no matter the circumstances of your project.
 
-### Summary
+### Section 1 Summary
 
 In this section, we created a framework from which to start developing our 'minesweeper' game. We then put together some simple logic, and tests to probe that logic, to prove the functionality of our framework and stand as a prototype from which to build the full program. We also called out where we may focus some future refactoring of our code base, and discussed some of features of the Rust programming language that were of benefit to our end goals. Finally, we spoke about how we are using Test Driven Development and version control with git to enhance our ability to ensure the program is, and remains, correct. From here, it is now time to start the work of turning our engine prototype into something that looks more like Minesweeper.
 
@@ -407,6 +407,7 @@ In this section, we created a framework from which to start developing our 'mine
 We are now at the point where our codebase is too large to be noted in detail and broken down line-by-line with explanatory commentary, so we will begin to explain only the most pertinent changes. For a more in-depth history of changes, the github repository contains the entire history of commits and what each commit changed (as well as some helpful commit messages containing the broad strokes of each change). In this version of the program, we will call this the version 0.2.0, we have gone from a simplistic prototype that serves almost as a demo for our engine, to building an incredibly early functional prototype of the game proper:
 
 We now have a "board" rendered,
+
 ~~~
      1  2  3  4  5
    1 -  -  -  -  - 
@@ -477,7 +478,7 @@ pub enum Tile {
 }
 ~~~
 
-I cannot stress enough how useful it is to be able to represent the state of our tiles so succinctly. This avoids a lot of the complexity we might deal with should we have been required to enumerate states like, "hidden with mine," or use a second data structure to store where mines were located. There still is a lot of data, but Rust's type system means we have no choice but to exhaustively account for all possible states which helps in avoiding subtle bugs. Now, we move on to the game logic itself. 
+I cannot stress enough how useful it is to be able to represent the state of our tiles so succinctly. This avoids a lot of the complexity we might deal with should we have been required to enumerate states like, "hidden with mine," or use a second data structure to store where mines were located. There still is a lot of data, but Rust's type system means we have no choice but to exhaustively account for all possible states which helps in avoiding subtle bugs. Now, we move on to the game logic itself.
 
 ### Processing Input
 
@@ -587,15 +588,15 @@ The draw function is quite simple:
     }
 ~~~
 
-With this, we draw a board state with characters representing different possible modes of our Tiles. We also have a special "debug" tile representation in the case that there is somehow a value of "None" (represented by the '?' character). This state shouldn't ever happen so we know that, if one of our tiles is rendered as '?', we have a logic issue somewhere to be resolved. 
+With this, we draw a board state with characters representing different possible modes of our Tiles. We also have a special "debug" tile representation in the case that there is somehow a value of "None" (represented by the '?' character). This state shouldn't ever happen so we know that, if one of our tiles is rendered as '?', we have a logic issue somewhere to be resolved.
 
-### Summary
+### Section 2 Summary
 
-In this section we started the first version of our software that actually looks like minesweeper. We have the skeleton of features like mines and hints, though much of the meat of that functionality remains. We have a board rendered to the screen, and the ability for the user to select a specific tile and act upon it (as by flagging, unflagging, or clearing the tile). There are no mines yet (or, rather, we haven't added them to our board), hints do not indicate what they are supposed to, and we have a lot of improvement we can do for processing input. 
+In this section we started the first version of our software that actually looks like minesweeper. We have the skeleton of features like mines and hints, though much of the meat of that functionality remains. We have a board rendered to the screen, and the ability for the user to select a specific tile and act upon it (as by flagging, unflagging, or clearing the tile). There are no mines yet (or, rather, we haven't added them to our board), hints do not indicate what they are supposed to, and we have a lot of improvement we can do for processing input.
 
 ## Echoes of a Complete Game
 
-At this point, we've reached what we will call our internal 0.3.0 version. In this version, we have reached a point where you could technically call our minesweeper clone a game; however, it would be more accurate to call it a puzzle. Like a classic puzzle it is a box that can be opened once and solved, but once solved there is no dynamism to make revisiting our puzzle worthwhile. We have hardcoded board parameters, unchanging mine locations, and haven't even included a way to restart our game yet. We will likely be implementing some sort of "state machine" to give us the ability to efficiently change between menu, gameplay, and gameover screens. Still, for now let's focus on what we have complete: 
+At this point, we've reached what we will call our internal 0.3.0 version. In this version, we have reached a point where you could technically call our minesweeper clone a game; however, it would be more accurate to call it a puzzle. Like a classic puzzle it is a box that can be opened once and solved, but once solved there is no dynamism to make revisiting our puzzle worthwhile. We have hardcoded board parameters, unchanging mine locations, and haven't even included a way to restart our game yet. We will likely be implementing some sort of "state machine" to give us the ability to efficiently change between menu, gameplay, and gameover screens. Still, for now let's focus on what we have complete:
 
 We have fully implemented hints and we can chain clear tiles surrounding a '0' hint to help avoid excesses of manual clearing,
 
@@ -869,9 +870,8 @@ We will deal with these functions (and one important data structure added) as a 
     }
 ~~~
 
-These improvements significantly improve ability to effectively select and process tiles for the user. Having letters and numbers to represent columns vs rows is a time tested methodology, and putting everything in one command means fewer opportunities for a mistake. Changing the interaction with the tiles to a simple modal process also provides more clarity to the user (and the codebase) than context based "yes/no" entries. Having a clear way to change selection also reduces frustration that might arise by mistyping a valid, but unintended, tile on the board. Instead a user can simply undo their selection and enter the correct tile. After this, there are a couple of less complex/important/informative helper functions. Namely: "check_for_win," which does exactly what it says by checking on each loop whether the player has revealed all of the mines, and "column_to_letter" which is an incredibly simple function that takes a column number and turns it into a character. 
+These improvements significantly improve ability to effectively select and process tiles for the user. Having letters and numbers to represent columns vs rows is a time tested methodology, and putting everything in one command means fewer opportunities for a mistake. Changing the interaction with the tiles to a simple modal process also provides more clarity to the user (and the codebase) than context based "yes/no" entries. Having a clear way to change selection also reduces frustration that might arise by mistyping a valid, but unintended, tile on the board. Instead a user can simply undo their selection and enter the correct tile. After this, there are a couple of less complex/important/informative helper functions. Namely: "check_for_win," which does exactly what it says by checking on each loop whether the player has revealed all of the mines, and "column_to_letter" which is an incredibly simple function that takes a column number and turns it into a character.
 
-### Summary
+### Section 3 Summary
 
 In this section, we finally have a playable minesweeper puzzle. We took the opportunity to explore when it is appropriate to extract logic out into its own function, and the dangers of holding didactically to any specific concept or paradigm. We have made significant improvements to the user experience by implementing chain clearing and more user friendly input handling. Now, we need to turn our puzzle into a game with randomized mine placement, board configuration, and a starting/ending menu. We will also need to add a mine tracker, and some end-of-game stats.
-

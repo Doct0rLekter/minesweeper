@@ -22,6 +22,7 @@ pub struct GameState {
     game_won: bool,
     board_width: u32,
     board_height: u32,
+    num_mines: usize,
     tiles: Vec<Tile>,
     selected_tile: Option<usize>,
     input_mode: InputMode,
@@ -48,6 +49,7 @@ impl GameState {
             game_won: false,
             board_height: 0,
             board_width: 0,
+            num_mines: 0,
             tiles: Vec::new(),
             selected_tile: None,
             input_mode: InputMode::Undo,
@@ -90,6 +92,11 @@ impl GameState {
         self.game_won
     }
 
+    #[must_use]
+    pub fn get_mines(&self) -> usize {
+        self.num_mines
+    }
+
     pub fn set_game_over(&mut self, game_over: bool) {
         self.game_over = game_over;
     }
@@ -117,6 +124,10 @@ impl GameState {
 
     pub fn set_won(&mut self, game_won: bool) {
         self.game_won = game_won;
+    }
+
+    pub fn set_mines(&mut self, num_mines: usize) {
+        self.num_mines = num_mines;
     }
 
     pub fn add_tile(&mut self, tile_state: Tile) {
@@ -152,6 +163,7 @@ impl GameState {
 pub mod game_loop {
     use super::{input_handler, input_handler::InputMode, GameState, Tile};
     use crossterm::{execute, terminal};
+    use rand::Rng;
     use std::io::stdout;
 
     pub fn play() {
@@ -182,28 +194,58 @@ pub mod game_loop {
         }
     }
 
+    fn place_mines(state: &mut GameState) {
+        let total_tiles = (state.get_width() * state.get_height()) as usize;
+        let num_mines = state.get_mines();
+
+        // Generate an array of all tile indices
+        let mut indices: Vec<usize> = (0..total_tiles).collect();
+
+        // Fisher-Yates shuffle algorithm
+        let mut rng = rand::thread_rng();
+        for i in (1..total_tiles).rev() {
+            let j = rng.gen_range(0..=i);
+            indices.swap(i, j);
+        }
+
+        // Place mines in the first `num_mines` positions of the shuffled indices
+        for &mine_index in indices.iter().take(num_mines) {
+            let tile = state.get_tile(mine_index);
+
+            if let Tile::Hidden {
+                has_mine: false,
+                flagged,
+            } = tile
+            {
+                state.set_tile(
+                    mine_index,
+                    Tile::Hidden {
+                        has_mine: true,
+                        flagged: *flagged,
+                    },
+                );
+            }
+        }
+    }
+
     fn reset(state: &mut GameState) {
         state.set_game_over(false);
 
         state.set_width(5);
         state.set_height(5);
+        state.set_mines(6);
         state.clear_tiles();
 
         let number_of_tiles = state.get_height() * state.get_width();
 
-        for tile in 0..number_of_tiles {
-            if (tile % 6) == 0 {
-                state.add_tile(Tile::Hidden {
-                    has_mine: true,
-                    flagged: false,
-                });
-            } else {
-                state.add_tile(Tile::Hidden {
-                    has_mine: false,
-                    flagged: false,
-                });
-            }
+        for _tile in 0..number_of_tiles {
+            state.add_tile(Tile::Hidden {
+                has_mine: false,
+                flagged: false,
+            });
         }
+
+        place_mines(state);
     }
 
     #[allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)]
@@ -664,6 +706,15 @@ mod test {
     }
 
     #[test]
+    fn gets_mines() {
+        let mut state = GameState::new();
+
+        state.num_mines = 6;
+
+        assert_eq!(6, state.get_mines());
+    }
+
+    #[test]
     fn sets_game_over() {
         let mut state = GameState::new();
         state.set_game_over(true);
@@ -733,5 +784,13 @@ mod test {
         state.set_won(true);
 
         assert_eq!(state.game_won, true)
+    }
+
+    #[test]
+    fn sets_mines() {
+        let mut state = GameState::new();
+        state.set_mines(6);
+
+        assert_eq!(state.num_mines, 6)
     }
 }
