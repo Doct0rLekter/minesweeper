@@ -16,13 +16,28 @@
 // and a roguelike dungeon crawler which I've yet to start on.
 
 use input_handler::InputMode;
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum GameMode {
+    Config,
+    Play,
+    Quit,
+}
+
+pub enum Difficulty {
+    Easy,
+    Medium,
+    Hard,
+}
+
 // Provide structure to game data
 pub struct GameState {
+    game_mode: GameMode,
     game_over: bool,
     game_won: bool,
     board_width: u32,
     board_height: u32,
-    num_mines: usize,
+    num_mines: u32,
     tiles: Vec<Tile>,
     selected_tile: Option<usize>,
     input_mode: InputMode,
@@ -45,6 +60,7 @@ impl GameState {
     #[must_use]
     pub fn new() -> GameState {
         GameState {
+            game_mode: GameMode::Play,
             game_over: false,
             game_won: false,
             board_height: 0,
@@ -93,8 +109,13 @@ impl GameState {
     }
 
     #[must_use]
-    pub fn get_mines(&self) -> usize {
+    pub fn get_mines(&self) -> u32 {
         self.num_mines
+    }
+
+    #[must_use]
+    pub fn get_game_mode(&self) -> GameMode {
+        self.game_mode
     }
 
     pub fn set_game_over(&mut self, game_over: bool) {
@@ -126,7 +147,17 @@ impl GameState {
         self.game_won = game_won;
     }
 
-    pub fn set_mines(&mut self, num_mines: usize) {
+    pub fn set_mines(&mut self, num_mines: u32) {
+        self.num_mines = num_mines;
+    }
+
+    pub fn set_game_mode(&mut self, game_mode: GameMode) {
+        self.game_mode = game_mode;
+    }
+
+    pub fn board_setup(&mut self, width: u32, height: u32, num_mines: u32) {
+        self.board_width = width;
+        self.board_height = height;
         self.num_mines = num_mines;
     }
 
@@ -161,47 +192,113 @@ impl GameState {
 }
 
 pub mod game_loop {
-    use super::{input_handler, input_handler::InputMode, GameState, Tile};
+
+    use super::{input_handler, input_handler::InputMode, Difficulty, GameMode, GameState, Tile};
     use crossterm::{execute, terminal};
     use rand::Rng;
     use std::io::stdout;
 
     pub fn play() {
         let mut state = GameState::new();
-
-        // Reset the game state after a game over
-        reset(&mut state);
-
-        // Draw the initial game state
-        draw(&mut state);
-
         loop {
-            let game_over = state.get_game_over();
-            let won = state.get_won();
+            let (mode, difficulty) = menu();
 
-            if game_over || won {
+            if mode == GameMode::Quit {
+                clear_screen();
                 break;
             }
 
-            // Process console input
-            process_input(&mut state);
+            // Reset the game state after a game over
+            setup(&mut state, &difficulty);
 
-            // Update the game state
-            update(&mut state);
-
-            // Redraw game state after each update
+            // Draw the initial game state
             draw(&mut state);
+
+            loop {
+                let game_over = state.get_game_over();
+                let won = state.get_won();
+
+                if game_over || won {
+                    input_handler::enter_to_continue();
+                    break;
+                }
+
+                // Process console input
+                process_input(&mut state);
+
+                // Update the game state
+                update(&mut state);
+
+                // Redraw game state after each update
+                draw(&mut state);
+            }
+        }
+    }
+
+    fn print_title() {
+        let title_menu = r#"
+  __  __ _____ _   _ ______  _______          ________ ______ _____  ______ _____  
+ |  \/  |_   _| \ | |  ____|/ ____\ \        / /  ____|  ____|  __ \|  ____|  __ \ 
+ | \  / | | | |  \| | |__  | (___  \ \  /\  / /| |__  | |__  | |__) | |__  | |__) |
+ | |\/| | | | | . ` |  __|  \___ \  \ \/  \/ / |  __| |  __| |  ___/|  __| |  _  / 
+ | |  | |_| |_| |\  | |____ ____) |  \  /\  /  | |____| |____| |    | |____| | \ \ 
+ |_|  |_|_____|_| \_|______|_____/    \/  \/   |______|______|_|    |______|_|  \_\
+
+
+   __  ___  __  _           
+  / / | _ \ \ \| |__ _ _  _ 
+ | |  |  _/  | | / _` | || |
+ | |  |_|    | |_\__,_|\_, |
+  \_\       /_/        |__/ 
+
+   __   ___  __            __ _                   
+  / /  / __| \ \ ___ _ _  / _(_)__ _ _  _ _ _ ___ 
+ | |  | (__   | / _ \ ' \|  _| / _` | || | '_/ -_)
+ | |   \___|  | \___/_||_|_| |_\__, |\_,_|_| \___|
+  \_\        /_/               |___/              
+
+   __   ___   __       _ _   
+  / /  / _ \  \ \ _  _(_) |_ 
+ | |  | (_) |  | | || | |  _|
+ | |   \__\_\  | |\_,_|_|\__|
+  \_\         /_/            
+      "#;
+
+        println!("{title_menu}");
+    }
+
+    fn config() -> Difficulty {
+        input_handler::read_difficulty(
+            "Enter preferred difficulty level [(e)asy | (m)edium | (h)ard] : ",
+        )
+    }
+
+    fn menu() -> (GameMode, Difficulty) {
+        clear_screen();
+        print_title();
+        let game_mode =
+            input_handler::read_game_mode("Enter choice [(p)lay | (c)onfigure | (q)uit] : ");
+
+        let difficulty;
+        match game_mode {
+            GameMode::Play | GameMode::Quit => (game_mode, Difficulty::Easy),
+            GameMode::Config => {
+                difficulty = config();
+                (GameMode::Play, difficulty)
+            }
         }
     }
 
     fn place_mines(state: &mut GameState) {
         let total_tiles = (state.get_width() * state.get_height()) as usize;
-        let num_mines = state.get_mines();
+        let num_mines = state.get_mines() as usize;
 
         // Generate an array of all tile indices
         let mut indices: Vec<usize> = (0..total_tiles).collect();
 
         // Fisher-Yates shuffle algorithm
+        // idea to use this algorithm came from the following stack overflow question:
+        // https://stackoverflow.com/questions/28891084/minesweeper-mine-generation-algorithm
         let mut rng = rand::thread_rng();
         for i in (1..total_tiles).rev() {
             let j = rng.gen_range(0..=i);
@@ -228,12 +325,14 @@ pub mod game_loop {
         }
     }
 
-    fn reset(state: &mut GameState) {
+    fn setup(state: &mut GameState, difficulty: &Difficulty) {
         state.set_game_over(false);
+        match difficulty {
+            Difficulty::Easy => state.board_setup(5, 5, 4),
+            Difficulty::Medium => state.board_setup(8, 8, 14),
+            Difficulty::Hard => state.board_setup(12, 12, 35),
+        }
 
-        state.set_width(5);
-        state.set_height(5);
-        state.set_mines(6);
         state.clear_tiles();
 
         let number_of_tiles = state.get_height() * state.get_width();
@@ -510,6 +609,7 @@ pub mod game_loop {
 // Create a new module to handle input to the program
 pub mod input_handler {
 
+    use super::{Difficulty, GameMode};
     use std::io::{self, Write};
 
     #[derive(PartialEq, Debug, Clone, Copy)]
@@ -639,6 +739,60 @@ pub mod input_handler {
 
         input_mode
     }
+
+    #[must_use]
+    pub fn read_game_mode(prompt: &str) -> GameMode {
+        let game_mode = loop {
+            let input = read_input(prompt);
+            let lower_input = input.trim().to_lowercase();
+
+            match lower_input.as_str() {
+                "play" | "p" => break GameMode::Play,
+                "configure" | "c" => break GameMode::Config,
+                "quit" | "q" => break GameMode::Quit,
+                _ => println!("Invalid input. Please select a menu option."),
+            }
+        };
+
+        game_mode
+    }
+
+    #[must_use]
+    pub fn read_difficulty(prompt: &str) -> Difficulty {
+        let difficulty = loop {
+            let input = read_input(prompt);
+            let lower_input = input.trim().to_lowercase();
+
+            match lower_input.as_str() {
+                "easy" | "e" => break Difficulty::Easy,
+                "medium" | "m" => break Difficulty::Medium,
+                "hard" | "h" => break Difficulty::Hard,
+                _ => println!("Invalid input. Please select a difficulty."),
+            }
+        };
+
+        difficulty
+    }
+
+    pub fn enter_to_continue() {
+        let mut input= String::new();
+        print!("Press enter to continue... ");
+
+        // # Panics
+        //
+        // This function will panic if flushing the stdout buffer fails.
+        // However, this is unlikely to happen under normal circumstances.
+        io::stdout().flush().unwrap();
+       
+        // # Panics
+        //
+        // This function will panic if reading from stdin fails.
+        // This could happen if there's an issue with the input stream,
+        // or if the process does not have access to the standard input.
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read line");
+    }
 }
 
 #[cfg(test)]
@@ -712,6 +866,15 @@ mod test {
         state.num_mines = 6;
 
         assert_eq!(6, state.get_mines());
+    }
+
+    #[test]
+    fn gets_game_mode() {
+        let mut state = GameState::new();
+
+        state.game_mode = GameMode::Play;
+
+        assert_eq!(GameMode::Play, state.get_game_mode());
     }
 
     #[test]
@@ -792,5 +955,13 @@ mod test {
         state.set_mines(6);
 
         assert_eq!(state.num_mines, 6)
+    }
+
+    #[test]
+    fn sets_game_mode() {
+        let mut state = GameState::new();
+        state.set_game_mode(GameMode::Play);
+
+        assert_eq!(state.game_mode, GameMode::Play)
     }
 }
