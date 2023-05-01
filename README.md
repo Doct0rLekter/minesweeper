@@ -881,6 +881,7 @@ In this section, we finally have a playable minesweeper puzzle. We took the oppo
 We are officially at the point I would consider minimum viable product:
 
 We have a fancy new menu screen:
+
 ~~~
   __  __ _____ _   _ ______  _______          ________ ______ _____  ______ _____  
  |  \/  |_   _| \ | |  ____|/ ____\ \        / /  ____|  ____|  __ \|  ____|  __ \ 
@@ -912,6 +913,7 @@ Enter choice [(p)lay | (c)onfigure | (q)uit] :
 ~~~
 
 Three difficulty settings:
+
 ~~~
 
   __  __ _____ _   _ ______  _______          ________ ______ _____  ______ _____  
@@ -945,6 +947,7 @@ Enter preferred difficulty level [(e)asy | (m)edium | (h)ard] :
 ~~~
 
 A board with indicators for turn count and remaining mines:
+
 ~~~
 Turn: 1
 Remaining Mines: 14
@@ -964,6 +967,7 @@ Enter column and row:
 ~~~
 
 Randomized mine placement:
+
 ~~~
 Turn: 27
 Remaining Mines: 0
@@ -1012,4 +1016,5 @@ And the ability to play again:
       
 Enter choice [(p)lay | (c)onfigure | (q)uit] : 
 ~~~
+
 as
