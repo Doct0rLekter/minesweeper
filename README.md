@@ -1012,3 +1012,4 @@ And the ability to play again:
       
 Enter choice [(p)lay | (c)onfigure | (q)uit] : 
 ~~~
+as
