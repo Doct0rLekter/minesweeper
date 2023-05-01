@@ -875,3 +875,140 @@ These improvements significantly improve ability to effectively select and proce
 ### Section 3 Summary
 
 In this section, we finally have a playable minesweeper puzzle. We took the opportunity to explore when it is appropriate to extract logic out into its own function, and the dangers of holding didactically to any specific concept or paradigm. We have made significant improvements to the user experience by implementing chain clearing and more user friendly input handling. Now, we need to turn our puzzle into a game with randomized mine placement, board configuration, and a starting/ending menu. We will also need to add a mine tracker, and some end-of-game stats.
+
+## Making Minesweeper Dynamic
+
+We are officially at the point I would consider minimum viable product:
+
+We have a fancy new menu screen:
+~~~
+  __  __ _____ _   _ ______  _______          ________ ______ _____  ______ _____  
+ |  \/  |_   _| \ | |  ____|/ ____\ \        / /  ____|  ____|  __ \|  ____|  __ \ 
+ | \  / | | | |  \| | |__  | (___  \ \  /\  / /| |__  | |__  | |__) | |__  | |__) |
+ | |\/| | | | | . ` |  __|  \___ \  \ \/  \/ / |  __| |  __| |  ___/|  __| |  _  / 
+ | |  | |_| |_| |\  | |____ ____) |  \  /\  /  | |____| |____| |    | |____| | \ \ 
+ |_|  |_|_____|_| \_|______|_____/    \/  \/   |______|______|_|    |______|_|  \_\
+
+
+   __  ___  __  _           
+  / / | _ \ \ \| |__ _ _  _ 
+ | |  |  _/  | | / _` | || |
+ | |  |_|    | |_\__,_|\_, |
+  \_\       /_/        |__/ 
+
+   __   ___  __            __ _                   
+  / /  / __| \ \ ___ _ _  / _(_)__ _ _  _ _ _ ___ 
+ | |  | (__   | / _ \ ' \|  _| / _` | || | '_/ -_)
+ | |   \___|  | \___/_||_|_| |_\__, |\_,_|_| \___|
+  \_\        /_/               |___/              
+
+   __   ___   __       _ _   
+  / /  / _ \  \ \ _  _(_) |_ 
+ | |  | (_) |  | | || | |  _|
+ | |   \__\_\  | |\_,_|_|\__|
+  \_\         /_/            
+      
+Enter choice [(p)lay | (c)onfigure | (q)uit] : 
+~~~
+
+Three difficulty settings:
+~~~
+
+  __  __ _____ _   _ ______  _______          ________ ______ _____  ______ _____  
+ |  \/  |_   _| \ | |  ____|/ ____\ \        / /  ____|  ____|  __ \|  ____|  __ \ 
+ | \  / | | | |  \| | |__  | (___  \ \  /\  / /| |__  | |__  | |__) | |__  | |__) |
+ | |\/| | | | | . ` |  __|  \___ \  \ \/  \/ / |  __| |  __| |  ___/|  __| |  _  / 
+ | |  | |_| |_| |\  | |____ ____) |  \  /\  /  | |____| |____| |    | |____| | \ \ 
+ |_|  |_|_____|_| \_|______|_____/    \/  \/   |______|______|_|    |______|_|  \_\
+
+
+   __  ___  __  _           
+  / / | _ \ \ \| |__ _ _  _ 
+ | |  |  _/  | | / _` | || |
+ | |  |_|    | |_\__,_|\_, |
+  \_\       /_/        |__/ 
+
+   __   ___  __            __ _                   
+  / /  / __| \ \ ___ _ _  / _(_)__ _ _  _ _ _ ___ 
+ | |  | (__   | / _ \ ' \|  _| / _` | || | '_/ -_)
+ | |   \___|  | \___/_||_|_| |_\__, |\_,_|_| \___|
+  \_\        /_/               |___/              
+
+   __   ___   __       _ _   
+  / /  / _ \  \ \ _  _(_) |_ 
+ | |  | (_) |  | | || | |  _|
+ | |   \__\_\  | |\_,_|_|\__|
+  \_\         /_/            
+      
+Enter choice [(p)lay | (c)onfigure | (q)uit] : c
+Enter preferred difficulty level [(e)asy | (m)edium | (h)ard] : 
+~~~
+
+A board with indicators for turn count and remaining mines:
+~~~
+Turn: 1
+Remaining Mines: 14
+
+     A  B  C  D  E  F  G  H  
+   1 -  -  -  -  -  -  -  - 
+   2 -  -  -  -  -  -  -  - 
+   3 -  -  -  -  -  -  -  - 
+   4 -  -  -  -  -  -  -  - 
+   5 -  -  -  -  -  -  -  - 
+   6 -  -  -  -  -  -  -  - 
+   7 -  -  -  -  -  -  -  - 
+   8 -  -  -  -  -  -  -  - 
+Select a hidden tile
+
+Enter column and row: 
+~~~
+
+Randomized mine placement:
+~~~
+Turn: 27
+Remaining Mines: 0
+
+     A  B  C  D  E  F  G  H  
+   1 1  1  1  F  F  F  2  0 
+   2 F  1  1  3  F  F  2  0 
+   3 1  1  0  1  2  2  1  0 
+   4 0  0  0  0  0  0  0  0 
+   5 1  1  2  1  1  0  0  0 
+   6 1  F  3  F  1  0  0  0 
+   7 2  3  F  3  3  2  3  2 
+   8 1  F  3  F  2  F  F  F 
+Congratulations, you found all of the mines!
+Press enter to continue... 
+~~~
+
+And the ability to play again:
+
+~~~
+  __  __ _____ _   _ ______  _______          ________ ______ _____  ______ _____  
+ |  \/  |_   _| \ | |  ____|/ ____\ \        / /  ____|  ____|  __ \|  ____|  __ \ 
+ | \  / | | | |  \| | |__  | (___  \ \  /\  / /| |__  | |__  | |__) | |__  | |__) |
+ | |\/| | | | | . ` |  __|  \___ \  \ \/  \/ / |  __| |  __| |  ___/|  __| |  _  / 
+ | |  | |_| |_| |\  | |____ ____) |  \  /\  /  | |____| |____| |    | |____| | \ \ 
+ |_|  |_|_____|_| \_|______|_____/    \/  \/   |______|______|_|    |______|_|  \_\
+
+
+   __  ___  __  _           
+  / / | _ \ \ \| |__ _ _  _ 
+ | |  |  _/  | | / _` | || |
+ | |  |_|    | |_\__,_|\_, |
+  \_\       /_/        |__/ 
+
+   __   ___  __            __ _                   
+  / /  / __| \ \ ___ _ _  / _(_)__ _ _  _ _ _ ___ 
+ | |  | (__   | / _ \ ' \|  _| / _` | || | '_/ -_)
+ | |   \___|  | \___/_||_|_| |_\__, |\_,_|_| \___|
+  \_\        /_/               |___/              
+
+   __   ___   __       _ _   
+  / /  / _ \  \ \ _  _(_) |_ 
+ | |  | (_) |  | | || | |  _|
+ | |   \__\_\  | |\_,_|_|\__|
+  \_\         /_/            
+      
+Enter choice [(p)lay | (c)onfigure | (q)uit] : 
+~~~
