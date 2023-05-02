@@ -1,6 +1,6 @@
 # MINESWEEPER
 
-#### Video Demo:  <URL HERE>
+#### Video Demo:  <[Minesweeper in Rust](https://clipchamp.com/watch/MWiBNq5wNUF)>
 
 #### Description: Create a CLI Minesweeper game using idiomatic Rust, Test Driven Development, and classic game design patterns (IE, the 'game loop' design pattern)
 
