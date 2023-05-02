@@ -624,7 +624,7 @@ pub mod game_loop {
         let mine_count = state.get_mine_count();
         let turn_count = state.get_turn_count() + 1;
 
-        println!("Turn: {turn_count}\nRemaining Mines: {mine_count}\n");
+        println!("Turns: {turn_count}\nMines: {mine_count}\n");
         // Print the column numbers
         print!("     ");
         for col in 0..state.get_width() {

@@ -1286,4 +1286,167 @@ And the ability to play again:
 Enter choice [(p)lay | (c)onfigure | (q)uit] : 
 ~~~
 
-as
+On to the source code, starting with the new data structures:
+
+### Representing Valid States
+
+~~~rust
+/*
+ The new 'GameMode' enum allows us to represent
+ the three valid states of our menu.
+ We can either:
+ - configure the board,
+ - play the game,
+ - or quit the program.
+*/
+pub enum GameMode {
+    Config,
+    Play,
+    Quit,
+}
+
+/*
+ The 'Difficulty' enum allows us to split configuration
+ into three discrete difficulty levels:
+ - Easy is our default with a 5x5 board and 4 mines
+ - Medium difficulty has an 8x8 board with 14 mines
+ - Hard presents a 12x12 board with 35 mines
+*/
+pub enum Difficulty {
+    Easy,
+    Medium,
+    Hard,
+}
+~~~
+
+This comes with associated logic in the renamed 'setup' function (formerly the, "reset" function), as well as two new helper functions, "menu" and "config". We also use a new "GameState" method, "board_setup" to perform all setup actions in a single method call. Speaking of setup, we will skip right along to it:
+
+### Setting Up the Game
+
+~~~rust
+/*
+ We've added a parameter for a reference to a 'Difficulty' option
+ and changed the name to 'setup' to more closely mirror functionality
+*/
+fn setup(state: &mut GameState, difficulty: &Difficulty) {
+        
+        /*
+         The match statement calls 'board_setup'
+         with the parameters of the intended difficulty level.
+         The user defines this in the 'menu' function.
+        */
+        match difficulty {
+            Difficulty::Easy => state.board_setup(5, 5, 4),
+            Difficulty::Medium => state.board_setup(8, 8, 14),
+            Difficulty::Hard => state.board_setup(12, 12, 35),
+        }
+
+        let number_of_tiles = state.get_height() * state.get_width();
+
+        for _tile in 0..number_of_tiles {
+            state.add_tile(Tile::Hidden {
+                has_mine: false,
+                flagged: false,
+            });
+        }
+
+        /*
+         After populating the board with empty hidden tiles,
+         we call the new 'place_mines' function to randomly
+         select which tiles should have mines.
+        */
+        place_mines(state);
+    }
+~~~
+
+"place_mines" is set up as below:
+
+~~~rust
+    fn place_mines(state: &mut GameState) {
+        /*
+         We use our reference to state to calculate
+         the number of tiles and mines to be placed
+        */
+        let total_tiles = (state.get_width() * state.get_height()) as usize;
+        let num_mines = state.get_mines() as usize;
+
+
+        // Generate an array of all tile indices
+        let mut indices: Vec<usize> = (0..total_tiles).collect();
+
+        /*
+         We made the decision to do random placement of tiles
+         using the Fisher-Yates shuffle algorithm after some research.
+         This swaps various indices and then we place mines in
+         the 'tiles' vector based on the now random indices of
+         the 'indices' vector
+        */
+        // Fisher-Yates shuffle algorithm
+        // idea to use this algorithm came from the following stack overflow question:
+        // https://stackoverflow.com/questions/28891084/minesweeper-mine-generation-algorithm
+        let mut rng = rand::thread_rng();
+        for i in (1..total_tiles).rev() {
+            let j = rng.gen_range(0..=i);
+            indices.swap(i, j);
+        }
+
+        // Place mines in the first `num_mines` positions of the shuffled indices
+        for &mine_index in indices.iter().take(num_mines) {
+            let tile = state.get_tile(mine_index);
+
+            if let Tile::Hidden {
+                has_mine: false,
+                flagged,
+            } = tile
+            {
+                state.set_tile(
+                    mine_index,
+                    Tile::Hidden {
+                        has_mine: true,
+                        flagged: *flagged,
+                    },
+                );
+            }
+        }
+    }
+~~~
+
+After this, setup is complete. We now have a board of fixed size with randomly placed mines. Changes to the rest of the program are minimal, as our main concern in this iteration was to add dynamism to the game through randomized mines, and configurable board size. The only remaining thing was to add a mine counter and turn counter which was implemented by simply adding appropriate fields to our 'GameState' struct, incrementing/decrementing them when appropriate, and then printing their values to the console in the 'draw' function.
+
+### Section 4 Summary
+
+In section 4, we achieved a minimum viable product with all of the primary features we wanted to include. We created a menu from which the player could configure game difficulty, play again, or quit the program. We implemented random mine placement using the Fisher-Yates shuffle algorithm after coming upon [this](https://stackoverflow.com/questions/28891084/minesweeper-mine-generation-algorithm) stack overflow suggestion during our research. Finally, we implemented mine and turn tracking for the user.
+
+## The End?
+
+Software is rarely ever truly complete. There are a thousand ways we could optimize our game, improve code readability, add features, and improve existing features. This project, however, has reached its conclusion. Instead of continuing to add bits and baubles, we will instead examine the body of work in retrospect:
+
+### Post-Mortem
+
+There are four subjects I want to examine as potential failings:
+
+1. Test Driven Development
+2. The GameState struct
+3. Module structure
+4. Error Handling 
+
+#### Test Driven Development
+At the beginning we stated we wanted to utilize the tenets of Test Driven Development to drive our project; however, this may have been a mistake. Either because of the nature of a game or, perhaps, a lack of experience in the methods: it proved difficult to implement. The only functions that played well with testing were the "GameState" methods that had very little functionality to actually test. The other functions, by nature of being a game, were in many ways too reliant on user input to be tested. Perhaps if we could've found a way to efficiently mock user input I could have tested these, but even then it seems like an undertaking with limited reward. I imagine future experience and training in TDD would ease the confusion, or clarify where we went wrong.
+
+#### GameState as a Monolith
+
+Early on, we decided to encapsulate the game state within a single data structure. This made passing new fields between functions quite easy and kept everything to do with our game's data and state in one place; however, would it have been better/more-efficient to split this up into multiple structures? For instance, data representing the board itself could have been made into a struct of it's own and leaving alternate data structures for things like tracking whether the player won or lost the game. This could make our code a bit more clear in the case where we had more than just a single developer working on the codebase.
+
+#### Failure in Separation of Functionality
+
+Our game_loop module started pretty clean; however, as new features were required it eventually balooned with helper functions. We could easily have separated these helper functions into their own "helpers" module and made the game_loop significantly more readable. I'm sure there are many more places where we could improve this, but that seems like the big one. 
+
+#### It's Time to Panic!
+
+One stated goal I think we missed out on was writing things in idiomatic Rust. I don't think we did a poor job there overall, but our error handling could've been much improved. For instance, we have multiple opportunities for the programming to "Panic". Of course, the panicking code is limited to two 'input_handler' functions and it would take a failure of the console itself to make them panic, but the fact is we could probably just reprompt the user in cases where these unlikely failures occur. Proper error handling is a major component of idiomatic Rust, so if this were used by large quantities of people instead of being an occasional distraction for me to keep burnout at bay it would be sorely missed.
+
+### Finishing Notes
+
+Thank you, dear reader, for joining me in this journey. We've made some mistakes along the way, overcome procrastination, and learned a lot about programming together. To quote a beloved novel, "So long, and thanks for all the fish".
+
+
