@@ -1447,6 +1447,4 @@ One stated goal I think we missed out on was writing things in idiomatic Rust. I
 
 ### Finishing Notes
 
-Thank you, dear reader, for joining me in this journey. We've made some mistakes along the way, overcome procrastination, and learned a lot about programming together. To quote a beloved novel, "So long, and thanks for all the fish".
-
-
+Thank you, dear reader, for joining me in this journey. We've made some mistakes along the way, overcome procrastination, and learned a lot about programming together. Over the course of the project: we've spent nearly a month of concerted effort, written documentation over 43,000 characters in length, typed out 1,000+ lines of source code, and published 56 commits to our git repository. To quote a beloved novel, "So long, and thanks for all the fish".

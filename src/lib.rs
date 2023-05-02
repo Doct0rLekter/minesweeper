@@ -847,6 +847,7 @@ pub mod input_handler {
 
 #[cfg(test)]
 mod test {
+    // Open entire root module to our test module
     use super::*;
 
     #[test]
